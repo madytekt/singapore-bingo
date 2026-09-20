@@ -114,6 +114,12 @@ square.
 
 ---
 
+## Changing it
+
+`AGENTS.md` covers the conventions and the traps — the identity model, why the dish
+images are extracted the way they are, and what to check before shipping. Read it
+before editing.
+
 ## Working on it
 
 ```sh
