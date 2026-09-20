@@ -99,9 +99,21 @@
     .tcard-grid{grid-template-columns:minmax(0,270px) minmax(0,1fr);gap:18px}
   }
   @media(max-width:699px){
-    .tcard-art{width:min(100%,224px);margin-inline:auto}
-    .tcard-left{grid-template-columns:1fr;justify-items:center}
-    .tcard-stats{width:100%}
+    .tcard-grid{grid-template-columns:minmax(0,118px) minmax(0,1fr);gap:11px}
+    .tcard-art{width:100%}
+    .tcard-stats{grid-template-columns:1fr}
+    .tcard-stats div{border-right:0;border-bottom:1px solid var(--line);padding:6px}
+    .tcard-stats div:last-child{border-bottom:0}
+    .tcard-stats b{margin-bottom:3px}
+    .tcard-stats span{font-size:.86rem}
+    .tcard-flavour{font-size:.92rem;padding:8px 10px}
+    .tcard-where{font-size:.86rem}
+    .chip{font-size:.78rem;padding:5px 9px}
+    .label{margin:9px 0 5px}
+    .tcard-head h2{font-size:clamp(1.25rem,5vw,1.6rem)}
+  }
+  @media(max-width:380px){
+    .tcard-grid{grid-template-columns:minmax(0,102px) minmax(0,1fr);gap:9px}
   }
   @media(max-height:780px){
     .tcard-head{padding-block:9px 7px}
