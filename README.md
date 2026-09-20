@@ -1,76 +1,136 @@
 # Singapore Food Bingo
 
-Twenty-five hawker dishes, one shared leaderboard. Friends join under their own
-name, tap a dish to open its collectible card, and tick it off once they've eaten it.
+A tap-through version of the printed Singapore Food Bingo poster, made for friends
+visiting Singapore. Twenty-five hawker dishes, one shared leaderboard.
 
-## Files
+**Live:** https://singapore-food-bingo.netlify.app
+
+---
+
+## How to play
+
+1. Open the link and join with your name.
+2. Tap any dish on the poster to open its card — what's in it, what it costs,
+   where to get it, and which allergens to watch for.
+3. Eaten it? Hit **Mark as tried**. Your square stamps and the leaderboard updates
+   for everyone.
+4. Five in a row in any direction is a bingo. A ★ on a square means its card
+   carries a clue.
+
+---
+
+## How players are recognised
+
+There are no accounts and no passwords.
+
+- Joining with a name claims that name and binds it to your browser.
+- **A name can only be claimed once.** Anyone else typing it is refused.
+- **Only the bound device can tick that card's squares.** Nobody can mark
+  someone else's dishes.
+- Your progress lives on the server, keyed by your name — it is never stored
+  only on your phone.
+
+### Staying signed in
+
+Recognition uses browser storage, which survives refreshes and closed tabs
+indefinitely — but it is cleared by wiping browsing data, by private windows, by
+switching browsers, and **by iOS Safari if the site goes unopened for 7 days.**
+
+So every player gets a **personal link** (`…/#play=name&c=CODE`), shown with a
+Copy button in the Leaderboard panel. Opening it signs them back in on any phone,
+with no code to type. Tell people to save theirs — it is the safety net for the
+7-day Safari behaviour.
+
+A 4-character backup code is shown underneath in case they ever need to type it.
+
+### What this is not
+
+The site and its API are public: anyone with the URL can read the leaderboard and
+join under a new name. The name binding stops friends impersonating each other; it
+is not authentication. Fine for bingo, not for anything sensitive.
+
+**Player names are visible to anyone with the site URL.** They are never stored in
+this repository — only in the live database.
+
+---
+
+## Project layout
 
 ```
-index.html                       the site
-assets/singapore-food-bingo-reference.png   the poster board
-assets/dish-01.jpg … dish-25.jpg the 25 card images
-netlify/functions/board.mjs      the shared leaderboard API (Netlify Blobs)
-netlify.toml                     publish dir + functions dir
-package.json                     one dependency: @netlify/blobs
+public/                              ← the only folder served to the web
+  index.html                         the whole site: markup, styles, logic
+  assets/singapore-food-bingo-reference.png   the poster board
+  assets/dish-01.jpg … dish-25.jpg   one card image per dish
+netlify/functions/board.mjs          the leaderboard API
+netlify.toml                         publish dir + functions dir
+package.json                         one dependency: @netlify/blobs
 ```
 
-Each card image is isolated from the source board by connected-shape detection, not
-by grid position — the dishes overflow their squares on the original artwork, so a
-plain grid crop pulls in slices of the neighbouring dish.
+Everything outside `public/` stays private — `README.md`, `package.json` and
+`netlify.toml` all return 404 on the live site.
 
-## Deploy to Netlify
+---
 
-The leaderboard needs the serverless function, so deploy a way that runs
-`npm install` — **drag-and-drop will not work**.
+## The API
 
-**GitHub:** push this folder, then Netlify → Add new site → Import an existing
-project. Leave the build command empty, publish directory `.`
+One endpoint, `/api/board`, backed by Netlify Blobs. One record per player,
+keyed by a slug of their name.
 
-**CLI:** `npm install -g netlify-cli && npm install && netlify deploy --prod`
+| Request | Does | Fails with |
+|---|---|---|
+| `GET` | Returns every player's name and squares | — |
+| `POST {action:'join', name, device}` | Claims a name, returns the rejoin code | `name_taken` if another device holds it |
+| `POST {action:'claim', name, code, device}` | Moves a card to a new device | `bad_code` |
+| `POST {action:'save', name, device, tried}` | Saves 25 squares | `not_your_card` if the device isn't bound |
 
-Netlify Blobs needs no setup, no keys and no database — the function gets a store
-on first write. Then rename the site under Site configuration → Change site name
-and send the link to the group.
+`GET` never returns device ids or rejoin codes.
 
-## How identity works
-
-There are no accounts and no passwords. Instead:
-
-- A player joins by typing their name. That name becomes the key for their card.
-- Their browser generates a random device id, stored with the name. The server
-  binds the card to that device.
-- **A name can only be claimed once.** If someone else types a name that's taken,
-  the server refuses (`name_taken`) and offers the rejoin path instead.
-- **Only the bound device can write to a card.** A save from any other device is
-  rejected (`not_your_card`), so nobody can tick someone else's squares.
-- Moving to a new phone: enter the same name, then the four-character **rejoin
-  code** shown in the leaderboard panel. That rebinds the card to the new device.
-- The public board never returns device ids or rejoin codes — only names and squares.
-
-This stops casual impersonation, which is the actual risk among friends. It is not
-authentication: someone who knows a rejoin code can take that card, and the API
-is open to anyone with the URL. Fine for a bingo game, not for anything sensitive.
-
-## Clues
-
-A dish can carry a `clue` — a hint shown in a gold box on its card, with a ★ on the
-board so people go looking. Square 13 (Salted Egg Yolk Prawn) has one about the
-wedding dinner. To add more, put a `clue:'...'` on any entry in the `FOODS` array
-in `index.html`.
-
-## Testing locally
-
-```sh
-npm install
-npx netlify dev        # serves the page AND the /api/board function
-```
-
-Plain `python3 -m http.server` also works, but `/api/board` will 404, the leaderboard
-shows an "Offline" note, and joining won't work (it needs the server to assign a card).
+---
 
 ## Editing the dishes
 
-All 25 live in the `FOODS` array in `index.html`: name, type, heat (0–3), price,
-where to try it, best time, rarity, description, ingredients, allergens, optional clue.
-Order matters — entry *n* maps to square *n* on the poster and to tile *n* of the
-sprite sheet (5 per row, left to right).
+All 25 live in the `FOODS` array in `public/index.html`:
+
+```js
+{n:'Satay', t:'Grill', h:1, p:'S$0.80–1.20 a stick',
+ w:'Satay Street, Lau Pa Sat (from 7pm)', when:'Supper', r:'Common',
+ d:'Charcoal-grilled marinated skewers…',
+ g:['chicken or mutton','turmeric',…],   // ingredients
+ a:['Peanuts','Soy'],                    // allergens
+ clue:'…'}                               // optional; adds a ★ to the board
+```
+
+`h` is spice level 0–3, `r` is rarity (`Common` / `Rare` / `Legendary`).
+Order matters: entry *n* maps to square *n* on the poster and to `dish-NN.jpg`.
+
+### Regenerating the card images
+
+Each image is isolated from the source board by connected-shape detection rather
+than by grid position. This matters: the dishes overflow their squares on the
+original artwork, so a plain grid crop pulls in slices of the neighbouring dish —
+durian appearing under the wanton mee. The export flood-fills the whole board into
+regions, then keeps only the regions whose centre of mass falls inside a given
+square.
+
+---
+
+## Working on it
+
+```sh
+npm install
+netlify dev        # serves the site and /api/board together at localhost:8888
+```
+
+A plain static server also works, but `/api/board` will 404, the leaderboard shows
+an "Offline" note and joining won't work.
+
+Deploys happen automatically on push to `main`.
+
+### Housekeeping
+
+Remove a stray or test player:
+
+```sh
+netlify blobs:delete sg-food-bingo <slug-of-their-name>
+netlify blobs:list sg-food-bingo          # see all player keys
+```
