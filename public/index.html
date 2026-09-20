@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f8f2dd">
+<meta name="description" content="Singapore Food Bingo — taste 25 local favourites, collect the cards, climb the leaderboard.">
+<title>Singapore Food Bingo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f7f0dc'/%3E%3Cpath d='M12 35h40c-2 12-10 18-20 18S14 47 12 35Z' fill='%23b68a4d'/%3E%3Cpath d='M19 29c5-11 21-11 26 0' fill='none' stroke='%233f4d55' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 8v14M24 11l4 12M40 11l-4 12' stroke='%23c83f39' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#faf6e8;--paper2:#f3ead1;--ink:#35434b;--gold:#aa7940;--gold2:#d3ae73;
+    --red:#bb3634;--line:rgba(151,106,54,.35);--muted:#7d715f;
+    --common:#8a6a3c;--rare:#3f6b8e;--legend:#b5892e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(circle at 50% 0,#fffdf4 0,var(--paper) 42%,#eee3c9 100%);
+    color:var(--ink);font-family:Georgia,"Times New Roman",serif;min-height:100vh;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  button,select,input{font:inherit}button{cursor:pointer}
+  button:focus-visible,input:focus-visible{outline:3px solid #d89537;outline-offset:3px}
+  img{max-width:100%}[hidden]{display:none!important}
+
+  /* ---------- top bar ---------- */
+  .gamebar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(250,246,232,.93);
+    border-bottom:1px solid var(--line);backdrop-filter:blur(14px);padding:9px 14px;
+    display:flex;justify-content:center;box-shadow:0 5px 22px rgba(84,57,25,.08)}
+  .gamebar-inner{width:min(1040px,100%);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+  .mini-brand{display:flex;align-items:center;gap:9px;color:var(--gold);
+    font-family:ui-sans-serif,system-ui,sans-serif;font-weight:850;font-size:.76rem;
+    letter-spacing:.12em;text-transform:uppercase}
+  .seal{width:34px;height:34px;border:1px solid var(--gold2);border-radius:50%;display:grid;
+    place-items:center;font-size:1rem;background:#fffaf0;flex:none}
+  .progress-chip{display:flex;align-items:center;gap:11px;background:#fffaf1;border:1px solid var(--line);
+    border-radius:999px;padding:7px 15px;box-shadow:0 4px 12px rgba(82,56,27,.06)}
+  .progress-chip strong{font-size:1.05rem;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pips{display:flex;gap:2px}
+  .pips i{display:block;width:4px;height:12px;border-radius:1px;background:#e3d6ba}
+  .pips i.on{background:linear-gradient(180deg,var(--red),#d9713a)}
+  .pips i.line{background:linear-gradient(180deg,var(--legend),#e0bb64)}
+  .bingo-label{font-family:ui-sans-serif,system-ui,sans-serif;font-size:.72rem;color:#677175;white-space:nowrap}
+  .bar-actions{display:flex;justify-content:flex-end;gap:8px;align-items:center}
+  .ornate-btn{border:1px solid var(--line);background:#fffaf1;color:var(--ink);border-radius:999px;
+    padding:8px 13px;font-family:ui-sans-serif,system-ui,sans-serif;font-weight:760;font-size:.82rem}
+  .ornate-btn:hover{border-color:var(--gold)}
+  .who-chip{display:flex;align-items:center;gap:7px;font-family:ui-sans-serif,system-ui,sans-serif;
+    font-weight:800;font-size:.82rem;color:var(--ink);max-width:170px}
+  .who-chip .av{width:26px;height:26px;border-radius:50%;background:#fffaf0;border:1px solid var(--gold2);
+    display:grid;place-items:center;font-size:.7rem;font-weight:900;color:var(--gold);flex:none}
+  .who-chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ---------- poster board ---------- */
+  main{padding:20px 14px 60px}
+  .poster-shell{width:min(1040px,100%);margin:0 auto;position:relative;filter:drop-shadow(0 24px 40px rgba(74,48,23,.16))}
+  .poster{display:block;width:100%;height:auto}
+  .hotspot-grid{position:absolute;left:7.55%;top:20.72%;width:84.55%;height:69.62%;
+    display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr)}
+  .food-hotspot{position:relative;border:0;background:transparent;padding:0;
+    transition:background .18s ease,box-shadow .18s ease}
+  .food-hotspot:hover{background:rgba(255,248,217,.12);box-shadow:inset 0 0 0 1px rgba(175,116,49,.3)}
+  .food-hotspot.done{background:rgba(160,46,42,.13);box-shadow:inset 0 0 0 2px rgba(171,63,50,.55)}
+  .food-hotspot.done::after{content:"✓";position:absolute;right:7%;top:6%;width:28px;height:28px;
+    border-radius:50%;display:grid;place-items:center;background:var(--red);color:#fffaf0;
+    font:700 1rem/1 ui-sans-serif,system-ui,sans-serif;box-shadow:0 3px 10px rgba(89,28,25,.28)}
+  .screen-note{width:min(860px,calc(100% - 30px));margin:16px auto 0;text-align:center;
+    color:var(--muted);font:italic .92rem/1.5 Georgia,serif}
+  .screen-note b{font-style:normal;color:var(--red);font-family:ui-sans-serif,system-ui,sans-serif;font-size:.82rem}
+
+  /* ---------- dialogs ---------- */
+  dialog{border:0;padding:0;background:transparent;color:var(--ink);width:min(430px,calc(100% - 24px));
+    max-width:none;box-shadow:0 30px 100px rgba(48,34,18,.4)}
+  dialog::backdrop{background:rgba(37,35,27,.62);backdrop-filter:blur(5px)}
+  #leaderDialog,#setupDialog{width:min(520px,calc(100% - 24px));border-radius:18px}
+  #foodDialog{width:min(840px,calc(100% - 24px));max-height:94dvh;
+    overflow-y:auto;overflow-x:hidden;border-radius:16px}
+
+  /* ---------- the trading card ---------- */
+  .tcard{position:relative;border-radius:16px;padding:9px;
+    background:linear-gradient(145deg,#e9c88a 0%,#c9a15c 18%,#f3e0b5 38%,#b8873f 58%,#e7c98a 78%,#c9a15c 100%);
+    box-shadow:0 18px 48px rgba(48,34,18,.45)}
+  .tcard-inner{background:var(--paper);border-radius:10px;overflow:hidden;
+    border:1px solid rgba(120,84,40,.35)}
+  .tcard-head{display:flex;align-items:center;gap:10px;padding:11px 52px 9px 13px;
+    background:linear-gradient(#fffdf5,var(--paper2));border-bottom:1px solid var(--line)}
+  .tcard-head h2{font-size:clamp(1.5rem,5.4vw,1.95rem);font-weight:400;line-height:1.05;margin:0;flex:1;min-width:0}
+  .tcard-type{font:850 .72rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;
+    text-transform:uppercase;color:#fffaf0;background:var(--gold);padding:6px 10px;border-radius:999px;flex:none}
+  .heat{display:flex;gap:3px;flex:none}
+  .heat i{width:9px;height:9px;border-radius:50%;background:#e0d3b8;display:block}
+  .heat i.on{background:var(--red)}
+
+  .tcard-grid{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 13px 0}
+  .tcard-left,.tcard-right{display:grid;gap:10px;align-content:start;min-width:0}
+  @media(min-width:700px){
+    .tcard-grid{grid-template-columns:minmax(0,334px) minmax(0,1fr);gap:18px}
+  }
+  @media(max-width:699px){ .tcard-art{max-width:290px;margin-inline:auto;width:100%} }
+  .tcard-art{position:relative;border-radius:8px;
+    border:1px solid rgba(120,84,40,.4);background:#fffdf4;overflow:hidden}
+  .art-img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+  .tcard-art::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(118deg,transparent 38%,rgba(255,255,255,.42) 47%,transparent 56%)}
+  .tcard-no{position:absolute;right:8px;bottom:8px;font:850 .74rem/1 ui-sans-serif,system-ui,sans-serif;
+    letter-spacing:.06em;color:var(--gold);background:rgba(255,253,244,.88);
+    border:1px solid var(--line);border-radius:999px;padding:4px 7px}
+
+  .tcard-stats{display:grid;grid-template-columns:repeat(2,1fr);
+    border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fffdf5}
+  .tcard-stats div{padding:9px 8px;text-align:center;border-right:1px solid var(--line);min-width:0}
+  .tcard-stats div:last-child{border-right:0}
+  .tcard-stats b{display:block;font:850 .64rem/1 ui-sans-serif,system-ui,sans-serif;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
+  .tcard-stats span{font:750 .95rem/1.25 ui-sans-serif,system-ui,sans-serif;color:var(--ink);
+    overflow-wrap:anywhere}
+
+  .tcard-flavour{margin:0;padding:11px 13px;background:#f6edd6;
+    border-left:3px solid var(--gold2);border-radius:0 6px 6px 0;
+    font:italic 1.03rem/1.5 Georgia,serif;color:#54606a}
+  .tcard-clue{margin:0;padding:10px 12px;border:1px dashed var(--legend);
+    border-radius:8px;background:linear-gradient(#fdf4dc,#f8ebc8);position:relative}
+  .tcard-clue b{display:block;font:850 .64rem/1 ui-sans-serif,system-ui,sans-serif;
+    letter-spacing:.14em;text-transform:uppercase;color:#8a6410;margin-bottom:4px}
+  .tcard-clue span{font:italic 1.01rem/1.5 Georgia,serif;color:#5b4a22}
+  .food-hotspot.has-clue::before{content:"★";position:absolute;left:6%;top:6%;
+    font:700 .8rem/1 ui-sans-serif,system-ui,sans-serif;color:var(--legend);
+    text-shadow:0 1px 3px rgba(255,253,244,.95),0 0 6px rgba(255,253,244,.9)}
+  @media(max-width:720px){.food-hotspot.has-clue::before{font-size:.62rem}}
+  .tcard-where{margin:0;font:750 .95rem/1.4 ui-sans-serif,system-ui,sans-serif;color:#5d6a70}
+  .tcard-where b{font:850 .64rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--gold);display:block;margin-bottom:3px}
+
+  .tcard-body{padding:0}
+  .tcard-body .label:first-child{margin-top:0}
+  .label{font:850 .68rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--gold);margin:14px 0 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font:750 .88rem/1 ui-sans-serif,system-ui,sans-serif;background:#ede4ce;
+    border:1px solid rgba(167,120,64,.22);border-radius:99px;padding:8px 12px}
+  .chip.alert{background:#f3d9ce;color:#83342d;border-color:rgba(187,54,52,.3)}
+  .allergy-note{font:italic .88rem/1.45 Georgia,serif;color:var(--muted);margin:9px 0 0}
+
+  .tcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    margin:12px 13px 0;padding:7px 0 0;border-top:1px solid var(--line);
+    font:850 .68rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--muted)}
+  .rarity{padding:6px 10px;border-radius:999px;color:#fffaf0;background:var(--common)}
+  .rarity[data-r="Rare"]{background:var(--rare)}
+  .rarity[data-r="Legendary"]{background:linear-gradient(90deg,var(--legend),#e3c169)}
+
+  .modal-actions{display:flex;gap:8px;margin:13px 13px 13px}
+  .primary,.secondary{border-radius:9px;padding:14px 18px;
+    font:850 .97rem/1 ui-sans-serif,system-ui,sans-serif}
+  .primary{flex:1;border:1px solid #8e2e2a;background:var(--red);color:#fffaf0}
+  .primary[disabled]{opacity:.5}
+  .secondary{border:1px solid var(--line);background:#fffaf0;color:var(--ink)}
+  .secondary[disabled]{opacity:.45}
+  .close{position:absolute;right:13px;top:13px;border:1px solid var(--line);background:#fffaf0;
+    color:var(--ink);width:32px;height:32px;border-radius:50%;
+    font:1.1rem/1 ui-sans-serif,system-ui,sans-serif;z-index:5;box-shadow:0 3px 10px rgba(48,34,18,.3)}
+
+  /* ---------- join / leaderboard ---------- */
+  .setup{background:var(--paper);border:2px solid var(--gold2);border-radius:18px;padding:28px 26px;position:relative}
+  .setup h2{text-align:center;font-weight:400;font-size:1.8rem;margin:0 0 7px}
+  .setup>p{text-align:center;color:#6c706d;margin:0 0 20px;font-size:.93rem}
+  .jf{display:flex;flex-direction:column;gap:9px}
+  .jf input{width:100%;border:1px solid var(--line);background:#fffaf0;border-radius:9px;
+    padding:12px;color:var(--ink);text-align:center;font-family:ui-sans-serif,system-ui,sans-serif}
+  .jf input#joinCode{text-transform:uppercase;letter-spacing:.35em;font-weight:900}
+  .jf .primary{flex:none}
+  .jf-err{min-height:1.3em;text-align:center;color:var(--red);font:750 .82rem/1.3 ui-sans-serif,system-ui,sans-serif;margin-top:4px}
+  .claim-box{margin-top:16px;padding-top:15px;border-top:1px solid var(--line)}
+  .claim-box p{font:italic .85rem/1.5 Georgia,serif;color:var(--muted);margin:0 0 10px;text-align:center}
+
+  .leader-list{display:grid;gap:6px;max-height:54vh;overflow:auto}
+  .leader-row{display:grid;grid-template-columns:30px 36px 1fr auto;gap:9px;align-items:center;
+    padding:9px 8px;border-bottom:1px solid rgba(165,118,63,.18);
+    font-family:ui-sans-serif,system-ui,sans-serif}
+  .leader-row.me{background:#f0e3c4;border-radius:8px}
+  .rank{font-weight:900;color:var(--gold);text-align:center;font-variant-numeric:tabular-nums}
+  .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    border:1px solid var(--gold2);background:#fffaf0;font-weight:900;font-size:.8rem}
+  .leader-name strong{display:block;font-size:.92rem;overflow-wrap:anywhere}
+  .leader-name span{font-size:.71rem;color:#707773}
+  .leader-score{font-weight:900;color:var(--red);font-variant-numeric:tabular-nums}
+  .lb-empty{text-align:center;color:var(--muted);font:italic .95rem/1.5 Georgia,serif;padding:18px 0}
+  .code-note{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
+    font:750 .82rem/1.5 ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
+  .code-note p{margin:0 0 9px;text-align:center}
+  .linkrow{display:flex;gap:7px}
+  .linkrow input{flex:1;min-width:0;border:1px solid var(--line);background:#fffaf0;border-radius:8px;
+    padding:10px;color:var(--ink);font:750 .8rem/1 ui-sans-serif,system-ui,sans-serif;
+    text-overflow:ellipsis}
+  .linkrow button{flex:none;padding:10px 14px}
+  .code-small{margin:9px 0 0!important;font-size:.74rem;opacity:.85}
+  .code-small b{letter-spacing:.24em;color:var(--gold)}
+  .sync-warn{text-align:center;font:750 .78rem/1.4 ui-sans-serif,system-ui,sans-serif;
+    color:var(--red);margin:10px 0 0}
+
+  .toast{position:fixed;z-index:60;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));
+    transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--ink);color:#fffaf0;
+    border-radius:99px;padding:10px 16px;font:750 .84rem/1 ui-sans-serif,system-ui,sans-serif;
+    transition:.2s;max-width:calc(100vw - 32px);text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media(max-width:720px){
+    .gamebar{padding:8px}.gamebar-inner{grid-template-columns:auto 1fr;gap:8px}
+    .mini-brand{display:none}.bingo-label{display:none}
+    .progress-chip{padding:6px 11px;gap:8px}.pips i{width:3px;height:11px}
+    main{padding:10px 4px 40px}.poster-shell{width:100%}
+    .food-hotspot.done::after{width:20px;height:20px;font-size:.72rem}
+    .screen-note{font-size:.8rem;margin-top:11px}
+    .who-chip{max-width:112px}.who-chip .nm{font-size:.78rem}
+  }
+  @media(max-width:410px){
+    .pips i{width:2px}.progress-chip strong{font-size:.92rem}
+    .ornate-btn{font-size:0;width:36px;height:34px;padding:0}
+    .ornate-btn#leaderBtn::after{content:"🏆";font-size:1rem}
+    .ornate-btn#signOut::after{content:"⎋";font-size:1rem}
+    .food-hotspot.done::after{right:4%;top:4%;width:17px;height:17px;font-size:.62rem}
+    .tcard-stats{grid-template-columns:1fr 1fr}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="gamebar">
+  <div class="gamebar-inner">
+    <div class="mini-brand"><span class="seal">✿</span><span>Singapore Food Bingo</span></div>
+    <div class="progress-chip" aria-label="Your progress">
+      <strong id="score">0 / 25</strong>
+      <div class="pips" id="pips" aria-hidden="true"></div>
+      <span class="bingo-label" id="bingoLabel">0 bingo lines</span>
+    </div>
+    <div class="bar-actions">
+      <div class="who-chip" id="whoChip" hidden><span class="av" id="whoAv"></span><span class="nm" id="whoName"></span></div>
+      <button class="ornate-btn" id="leaderBtn" type="button">Leaderboard</button>
+      <button class="ornate-btn" id="signOut" type="button" hidden title="Sign out">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="poster-shell">
+    <img class="poster" src="assets/singapore-food-bingo-reference.png" alt="Singapore Food Bingo board with 25 illustrated local dishes">
+    <section class="hotspot-grid" id="hotspotGrid" aria-label="Interactive Singapore food bingo board"></section>
+  </div>
+  <p class="screen-note" id="screenNote">Tap any dish to open its card.</p>
+</main>
+
+<dialog id="foodDialog" aria-label="Dish card">
+  <article class="tcard">
+    <button class="close" id="closeFood" aria-label="Close">×</button>
+    <div class="tcard-inner">
+      <div class="tcard-head">
+        <h2 id="foodTitle"></h2>
+        <span class="heat" id="foodHeat" title="Spice level"></span>
+        <span class="tcard-type" id="foodType"></span>
+      </div>
+      <div class="tcard-grid">
+      <div class="tcard-left">
+        <div class="tcard-art">
+          <img class="art-img" id="foodArt" alt="">
+          <span class="tcard-no" id="foodNo"></span>
+        </div>
+        <div class="tcard-stats">
+          <div><b>Price</b><span id="statPrice"></span></div>
+            <div><b>Status</b><span id="statStatus"></span></div>
+        </div>
+      </div>
+      <div class="tcard-right">
+      <p class="tcard-flavour" id="foodDescription"></p>
+      <div class="tcard-clue" id="foodClue" hidden><b>★ Clue</b><span id="clueText"></span></div>
+      <div class="tcard-where"><b>Where to try it</b><span id="statWhere"></span></div>
+      <div class="tcard-body">
+        <div class="label">Major ingredients</div>
+        <div class="chips" id="ingredients"></div>
+        <div class="label">Common allergens</div>
+        <div class="chips" id="allergens"></div>
+        <p class="allergy-note">Recipes vary by stall. Always confirm allergens with the vendor.</p>
+      </div>
+      </div>
+      </div>
+      <div class="tcard-foot">
+        <span>SG Hawker Series</span>
+        <span class="rarity" id="foodRarity"></span>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="resetFood" type="button">Reset</button>
+        <button class="primary" id="markFood" type="button">Mark as tried</button>
+      </div>
+    </div>
+  </article>
+</dialog>
+
+<dialog id="setupDialog" aria-label="Join the game">
+  <section class="setup">
+    <h2>Join the game</h2>
+    <p>Use the name your friends know you by. Your card sticks to this device, so nobody else can tick your squares.</p>
+    <form class="jf" id="joinForm">
+      <input id="joinName" maxlength="40" placeholder="Your name" autocomplete="given-name" enterkeyhint="go">
+      <button class="primary" id="joinBtn" type="submit">Start collecting</button>
+    </form>
+    <div class="jf-err" id="joinErr" role="alert"></div>
+    <div class="claim-box" id="claimBox" hidden>
+      <p>Someone is already playing under that name. If that is you on a new phone, enter your four-character rejoin code.</p>
+      <form class="jf" id="claimForm">
+        <input id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off" enterkeyhint="go">
+        <button class="secondary" type="submit">Rejoin my card</button>
+      </form>
+    </div>
+  </section>
+</dialog>
+
+<dialog id="leaderDialog" aria-label="Leaderboard">
+  <section class="setup">
+    <button class="close" id="closeLeader" aria-label="Close" style="right:12px;top:12px">×</button>
+    <h2>Leaderboard</h2>
+    <p>Every plate counts. Completed lines earn bragging rights.</p>
+    <div class="leader-list" id="leaderList"></div>
+    <p class="lb-empty" id="lbEmpty" hidden>No one has eaten anything yet. Suspicious.</p>
+    <p class="sync-warn" id="syncWarn" hidden>Offline — your squares are saved on this device and will sync when you reconnect.</p>
+    <div class="code-note" id="codeNote" hidden>
+      <p>Your personal link. Save it — opening it signs you back in on any phone, no code to remember.</p>
+      <div class="linkrow">
+        <input id="myLink" readonly aria-label="Your personal rejoin link">
+        <button class="secondary" id="copyLink" type="button">Copy</button>
+      </div>
+      <p class="code-small">Backup code, if you ever need to type it in: <b id="codeValue"></b></p>
+    </div>
+  </section>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const FOODS=[
+    {n:'Hainanese Chicken Rice',t:'Rice',h:1,p:'S$4–6',w:'Tian Tian, Maxwell Food Centre',when:'Lunch',r:'Common',
+     d:'Tender poached chicken, fragrant rice and punchy sauces — the understated national favourite.',
+     g:['chicken','rice','ginger','garlic','cucumber','chilli sauce'],a:['Soy','Sesame','Gluten']},
+    {n:'Chilli Crab',t:'Seafood',h:2,p:'S$70–100',w:'Jumbo Seafood, East Coast',when:'Dinner',r:'Legendary',
+     d:'Mud crab in a glossy, sweet-savoury tomato and chilli sauce, best mopped up with mantou.',
+     g:['mud crab','tomato','chilli','egg','garlic','mantou'],a:['Shellfish','Egg','Gluten','Soy']},
+    {n:'Katong Laksa',t:'Noodles',h:3,p:'S$6–9',w:'328 Katong Laksa, East Coast Road',when:'Any time',r:'Rare',
+     d:'Short rice noodles in a rich, spicy coconut broth with prawns and cockles.',
+     g:['rice noodles','coconut milk','prawn','cockles','laksa leaf','chilli'],a:['Shellfish','Fish']},
+    {n:'Char Kway Teow',t:'Noodles',h:2,p:'S$4–6',w:'Hill Street Fried Kway Teow, Bedok South',when:'Dinner',r:'Common',
+     d:'Wok-charred flat rice noodles tossed with egg, seafood, bean sprouts and dark sauce.',
+     g:['rice noodles','egg','prawn','cockles','bean sprouts','soy sauce'],a:['Shellfish','Egg','Soy','Gluten']},
+    {n:'Hokkien Mee',t:'Noodles',h:1,p:'S$5–8',w:'Nam Sing, Old Airport Road',when:'Dinner',r:'Common',
+     d:'Yellow noodles and bee hoon simmered in seafood stock, served with sambal and lime.',
+     g:['egg noodles','rice vermicelli','prawn','squid','pork stock','sambal'],a:['Shellfish','Gluten','Egg','Fish']},
+
+    {n:'Kaya Toast + Soft Eggs',t:'Breakfast',h:0,p:'S$3.50–5.50',w:'Chin Mee Chin, Katong',when:'Breakfast',r:'Common',
+     d:'Crisp toast spread with coconut-egg kaya and butter, paired with jammy eggs.',
+     g:['bread','kaya','coconut milk','egg','butter'],a:['Egg','Dairy','Gluten']},
+    {n:'Kopi',t:'Drink',h:0,p:'S$1.20–2',w:'Heap Seng Leong, Jalan Besar',when:'Breakfast',r:'Common',
+     d:'Strong sock-filtered coffee sweetened with condensed or evaporated milk.',
+     g:['robusta coffee','condensed milk','sugar'],a:['Dairy']},
+    {n:'Bak Kut Teh',t:'Soup',h:2,p:'S$8–12',w:'Song Fa, New Bridge Road',when:'Any time',r:'Common',
+     d:'Pork ribs in a peppery garlic broth, Teochew-style, with rice and tea.',
+     g:['pork ribs','white pepper','garlic','soy sauce','herbs'],a:['Soy','Gluten']},
+    {n:'Satay',t:'Grill',h:1,p:'S$0.80–1.20 a stick',w:'Satay Street, Lau Pa Sat (from 7pm)',when:'Supper',r:'Common',
+     d:'Charcoal-grilled marinated skewers with cucumber, onion and rich peanut sauce.',
+     g:['chicken or mutton','turmeric','lemongrass','peanut sauce','cucumber'],a:['Peanuts','Soy']},
+    {n:'Roti Prata',t:'Bread',h:1,p:'S$1.50–4',w:"Mr & Mrs Mohgan's, Joo Chiat",when:'Supper',r:'Common',
+     d:'Flaky, griddled flatbread torn into curry — crisp at the edges and chewy within.',
+     g:['wheat flour','ghee','egg','curry'],a:['Gluten','Dairy','Egg']},
+
+    {n:'Nasi Lemak',t:'Rice',h:2,p:'S$3–7',w:'Selera Rasa, Adam Road',when:'Breakfast',r:'Common',
+     d:'Coconut rice with sambal, fried anchovies, peanuts, cucumber and egg.',
+     g:['coconut rice','sambal','anchovies','peanuts','egg','cucumber'],a:['Peanuts','Egg','Fish']},
+    {n:'Otah',t:'Snack',h:2,p:'S$1–2 a piece',w:'East Coast Lagoon Food Village',when:'Snack',r:'Rare',
+     d:'Spiced fish paste wrapped in banana leaf and grilled until smoky and fragrant.',
+     g:['fish','coconut milk','chilli','lemongrass','banana leaf'],a:['Fish','Egg']},
+    {n:'Salted Egg Yolk Prawn',t:'Seafood',h:2,p:'S$18–28',w:'Keng Eng Kee, Alexandra Village',when:'Dinner',r:'Rare',
+     clue:'Keep this square free — there is a good chance this one turns up at the wedding dinner.',
+     d:'Crisp prawns coated in buttery salted egg yolk, curry leaves and chilli.',
+     g:['prawn','salted egg yolk','butter','curry leaf','chilli'],a:['Shellfish','Egg','Dairy']},
+    {n:'Oyster Omelette',t:'Seafood',h:1,p:'S$6–12',w:'Ah Chuan, Toa Payoh Lor 7',when:'Supper',r:'Rare',
+     d:'Crisp-edged egg and starch batter folded through plump oysters and coriander.',
+     g:['oysters','egg','tapioca starch','coriander','chilli sauce'],a:['Shellfish','Egg']},
+    {n:'Carrot Cake',t:'Fried',h:1,p:'S$3–5',w:'Fu Ming, Redhill Food Centre',when:'Breakfast',r:'Common',
+     d:'Not a dessert: radish-rice cakes wok-fried with egg, preserved radish and garlic.',
+     g:['radish cake','rice flour','egg','preserved radish','garlic','soy sauce'],a:['Egg','Soy','Gluten']},
+
+    {n:'Wanton Mee',t:'Noodles',h:1,p:'S$4–6',w:'Kok Kee, Lavender Food Square',when:'Lunch',r:'Common',
+     d:'Springy egg noodles with char siu, greens and pork-and-prawn dumplings.',
+     g:['egg noodles','pork','prawn','bok choy','soy sauce'],a:['Gluten','Egg','Shellfish','Soy']},
+    {n:'Rojak',t:'Salad',h:1,p:'S$4–7',w:'Toa Payoh Rojak, Lor 7',when:'Snack',r:'Rare',
+     d:'A lively fruit-and-fritter salad in a sticky prawn-paste dressing with peanuts.',
+     g:['pineapple','cucumber','turnip','fried dough','prawn paste','peanuts'],a:['Peanuts','Shellfish','Gluten']},
+    {n:'Murtabak',t:'Bread',h:1,p:'S$9–16',w:'Zam Zam, North Bridge Road',when:'Dinner',r:'Rare',
+     d:'A griddled stuffed bread packed with minced meat, onion and egg, served with curry.',
+     g:['wheat dough','mutton or chicken','egg','onion','curry'],a:['Gluten','Egg','Dairy']},
+    {n:'Beef Rendang',t:'Curry',h:2,p:'S$6–10',w:'Hjh Maimunah, Jalan Pisang',when:'Lunch',r:'Common',
+     d:'Beef slowly cooked with coconut and aromatics until deeply spiced and caramelised.',
+     g:['beef','coconut milk','lemongrass','galangal','chilli','spices'],a:['Coconut']},
+    {n:'Popiah',t:'Snack',h:0,p:'S$2–3 a roll',w:'Ann Chin Popiah, Chinatown Complex',when:'Snack',r:'Common',
+     d:'A thin soft wrapper rolled around sweet-savoury braised turnip, egg and crunchy extras.',
+     g:['wheat wrapper','turnip','egg','bean sprouts','peanuts','sweet sauce'],a:['Peanuts','Gluten','Egg','Soy']},
+
+    {n:'Durian',t:'Fruit',h:0,p:'S$15–30 a kg',w:'Geylang Lorong 27, after dark',when:'Supper',r:'Legendary',
+     d:'Singapore’s famously divisive “king of fruits”: creamy, aromatic and unforgettable. Banned on the MRT.',
+     g:['fresh durian'],a:[]},
+    {n:'Curry Puff',t:'Snack',h:1,p:'S$1.80–2.50',w:'J2 Famous Crispy Curry Puff, Amoy Street',when:'Snack',r:'Common',
+     d:'A golden pastry pocket filled with curried potato, chicken and often egg.',
+     g:['wheat pastry','potato','chicken','curry','egg'],a:['Gluten','Egg','Dairy']},
+    {n:'Ice Kachang',t:'Dessert',h:0,p:'S$2.50–4',w:'Mei Heong Yuen, Temple Street',when:'Afternoon',r:'Common',
+     d:'A technicolour mountain of shaved ice over beans and jellies, finished with syrups.',
+     g:['shaved ice','red beans','grass jelly','attap chee','syrup','evaporated milk'],a:['Dairy']},
+    {n:'Milo Dinosaur',t:'Drink',h:0,p:'S$3–4',w:'Al-Azhar, Bukit Timah',when:'Supper',r:'Common',
+     d:'Iced chocolate malt piled high with a glorious extra scoop of Milo powder.',
+     g:['Milo powder','milk','ice','condensed milk'],a:['Dairy','Gluten']},
+    {n:'Pandan Chiffon Cake',t:'Dessert',h:0,p:'S$1.50 a slice',w:'Bengawan Solo, in almost every mall',when:'Any time',r:'Common',
+     d:'Cloud-light green sponge scented with pandan leaf and coconut milk.',
+     g:['pandan','egg','flour','coconut milk','sugar'],a:['Egg','Gluten']}
+  ];
+
+  const LINES=(function(){const l=[];for(let r=0;r<5;r++){l.push([0,1,2,3,4].map(c=>r*5+c));l.push([0,1,2,3,4].map(c=>c*5+r));}l.push([0,6,12,18,24],[4,8,12,16,20]);return l;})();
+
+  const API='/api/board', KEY='sgFoodBingo.v2';
+  const $=s=>document.querySelector(s);
+  const blank=()=>Array.from({length:25},()=>false);
+
+  let me=null;          // {name, device, code}
+  let mine=blank();     // my 25 squares
+  let board=[];         // [{name,tried,updated}]
+  let online=null, activeFood=null, pushTimer=null, toastTimer=null;
+
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
+  const stash=()=>{try{localStorage.setItem(KEY,JSON.stringify({me,mine}))}catch{}};
+  const newDevice=()=>{try{if(crypto.randomUUID)return crypto.randomUUID()}catch{}
+    return 'd-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)};
+  const count=t=>t.reduce((n,v)=>n+(v?1:0),0);
+  const linesOf=t=>LINES.filter(L=>L.every(i=>t[i]));
+  const initials=n=>n.trim().split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  const slug=n=>String(n||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'').slice(0,48);
+  const linkFor=p=>location.origin+location.pathname+'#play='+slug(p.name)+'&c='+p.code;
+
+  /* ---------- network ---------- */
+  function post(payload){
+    return fetch(API,{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify(Object.assign({device:me?me.device:payload.device},payload))})
+      .then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw d;return d});
+  }
+  function setOnline(v){if(online!==v){online=v;$('#syncWarn').hidden=(v!==false)}}
+  function refresh(){
+    return fetch(API,{headers:{accept:'application/json'}})
+      .then(r=>{if(!r.ok)throw 0;return r.json()})
+      .then(d=>{setOnline(true);board=Array.isArray(d.players)?d.players:[];renderLeaders()})
+      .catch(()=>{setOnline(false);renderLeaders()});
+  }
+  function push(){
+    if(!me)return;
+    clearTimeout(pushTimer);
+    pushTimer=setTimeout(()=>{
+      post({action:'save',name:me.name,tried:mine})
+        .then(d=>{setOnline(true);if(Array.isArray(d.players)){board=d.players;renderLeaders()}})
+        .catch(e=>{
+          setOnline(false);
+          if(e&&e.error==='not_your_card'){toast('That card is claimed on another device.');signOut()}
+        });
+    },350);
+  }
+
+  /* ---------- board ---------- */
+  function renderBoard(){
+    const grid=$('#hotspotGrid');
+    grid.innerHTML=FOODS.map((f,i)=>
+      `<button class="food-hotspot${mine[i]?' done':''}${f.clue?' has-clue':''}" data-i="${i}" type="button"></button>`).join('');
+    [...grid.children].forEach((b,i)=>{
+      b.setAttribute('aria-label',FOODS[i].n+(mine[i]?', tried':', not tried yet')+(FOODS[i].clue?', has a clue':''));
+      b.setAttribute('aria-pressed',mine[i]?'true':'false');
+      b.onclick=()=>openFood(i);
+    });
+    const c=count(mine), done=linesOf(mine), onLine=new Set(done.flat());
+    $('#score').textContent=`${c} / 25`;
+    $('#pips').innerHTML=Array.from({length:25},(_,i)=>
+      `<i class="${mine[i]?(onLine.has(i)?'line':'on'):''}"></i>`).join('');
+    $('#bingoLabel').textContent=`${done.length} bingo ${done.length===1?'line':'lines'}`;
+    $('#screenNote').innerHTML=me
+      ? 'Tap any dish to open its card. A ★ means that card carries a clue.'
+      : 'Tap any dish to read its card. <b>Join to start ticking them off.</b>';
+  }
+
+  function renderLeaders(){
+    const rows=board.map(p=>({name:p.name,c:count(p.tried||[]),b:linesOf(p.tried||blank()).length}));
+    if(me&&!rows.some(r=>r.name===me.name))rows.push({name:me.name,c:count(mine),b:linesOf(mine).length});
+    else if(me){const r=rows.find(r=>r.name===me.name);r.c=count(mine);r.b=linesOf(mine).length}
+    rows.sort((a,b)=>b.c-a.c||b.b-a.b||a.name.localeCompare(b.name));
+    $('#lbEmpty').hidden=rows.length>0;
+    let rank=0,prev=null;
+    $('#leaderList').innerHTML=rows.map((r,i)=>{
+      const k=r.c+':'+r.b; if(k!==prev){rank=i+1;prev=k}
+      const isMe=me&&r.name===me.name;
+      return `<div class="leader-row${isMe?' me':''}">
+        <div class="rank">${r.c?rank:'—'}</div>
+        <div class="avatar">${esc(initials(r.name))}</div>
+        <div class="leader-name"><strong>${esc(r.name)}${isMe?' · you':''}</strong>
+          <span>${r.b} bingo ${r.b===1?'line':'lines'}</span></div>
+        <div class="leader-score">${r.c}/25</div></div>`;
+    }).join('');
+  }
+
+  /* ---------- the card ---------- */
+  function openFood(i){
+    activeFood=i;
+    const f=FOODS[i], done=mine[i];
+    $('#foodTitle').textContent=f.n;
+    $('#foodType').textContent=f.t;
+    $('#foodHeat').innerHTML=f.h?Array.from({length:3},(_,k)=>`<i class="${k<f.h?'on':''}"></i>`).join(''):'';
+    $('#foodHeat').title=f.h?`Spice level ${f.h} of 3`:'';
+    const art=$('#foodArt');
+    art.src='assets/dish-'+String(i+1).padStart(2,'0')+'.jpg'; art.alt=f.n;
+    $('#foodNo').textContent=String(i+1).padStart(2,'0')+' / 25';
+    $('#statPrice').textContent=f.p;
+    $('#statStatus').textContent=done?'Collected':'Not yet';
+    $('#foodDescription').textContent=f.d;
+    $('#foodClue').hidden=!f.clue;
+    if(f.clue)$('#clueText').textContent=f.clue;
+    $('#statWhere').textContent=f.w;
+    $('#ingredients').innerHTML=f.g.map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+    $('#allergens').innerHTML=f.a.length
+      ? f.a.map(x=>`<span class="chip alert">${esc(x)}</span>`).join('')
+      : '<span class="chip">No major common allergens</span>';
+    const rar=$('#foodRarity'); rar.textContent=f.r; rar.dataset.r=f.r;
+
+    const mark=$('#markFood'), reset=$('#resetFood');
+    if(!me){
+      mark.textContent='Join to track'; mark.disabled=false; reset.disabled=true;
+    }else{
+      mark.textContent=done?'Tried ✓':'Mark as tried'; mark.disabled=done; reset.disabled=!done;
+    }
+    $('#foodDialog').showModal();
+  }
+
+  function setSquare(v){
+    if(!me){$('#foodDialog').close();openJoin();return}
+    const before=linesOf(mine).length;
+    mine[activeFood]=v; stash(); renderBoard(); renderLeaders(); push();
+    $('#foodDialog').close();
+    toast(v?`${FOODS[activeFood].n} collected`:'Square reset');
+    if(v&&linesOf(mine).length>before)setTimeout(()=>toast('BINGO! That is a full line.'),1500);
+  }
+
+  /* ---------- identity ---------- */
+  function openJoin(){$('#joinErr').textContent='';$('#claimBox').hidden=true;$('#setupDialog').showModal();
+    setTimeout(()=>$('#joinName').focus(),60)}
+
+  function adopt(player){
+    me={name:player.name,device:me?me.device:pendingDevice,code:player.code};
+    mine=Array.from({length:25},(_,i)=>player.tried[i]===true||mine[i]===true);
+    stash(); $('#setupDialog').close(); paintWho(); renderBoard();
+    try{location.replace('#play='+slug(player.name)+'&c='+player.code)}catch(e){}
+    push(); refresh();
+    toast(`Welcome, ${player.name}. Bookmark this page to stay signed in.`);
+  }
+
+  let pendingDevice=null;
+
+  function paintWho(){
+    const on=!!me;
+    $('#whoChip').hidden=!on; $('#signOut').hidden=!on;
+    if(on){$('#whoName').textContent=me.name;$('#whoAv').textContent=initials(me.name);
+      $('#codeValue').textContent=me.code;$('#myLink').value=linkFor(me);$('#codeNote').hidden=false}
+    else{$('#codeNote').hidden=true}
+  }
+
+  function signOut(){
+    me=null; mine=blank(); stash(); paintWho(); renderBoard(); renderLeaders(); openJoin();
+  }
+
+  $('#joinForm').onsubmit=e=>{
+    e.preventDefault();
+    const name=$('#joinName').value.trim().slice(0,40);
+    const err=$('#joinErr');
+    if(!name){err.textContent='Pop a name in first.';return}
+    err.textContent=''; pendingDevice=me?me.device:(pendingDevice||newDevice());
+    post({action:'join',name,device:pendingDevice})
+      .then(d=>{$('#claimBox').hidden=true;adopt(d.player)})
+      .catch(e2=>{
+        if(e2&&e2.error==='name_taken'){err.textContent=e2.message;$('#claimBox').hidden=false;
+          setTimeout(()=>$('#joinCode').focus(),60)}
+        else{err.textContent='Could not reach the game. Check your connection and try again.'}
+      });
+  };
+
+  $('#claimForm').onsubmit=e=>{
+    e.preventDefault();
+    const name=$('#joinName').value.trim().slice(0,40);
+    const code=$('#joinCode').value.trim().toUpperCase();
+    const err=$('#joinErr');
+    if(code.length!==4){err.textContent='The rejoin code is four characters.';return}
+    pendingDevice=pendingDevice||newDevice();
+    post({action:'claim',name,code,device:pendingDevice})
+      .then(d=>{mine=blank();adopt(d.player)})
+      .catch(e2=>{err.textContent=(e2&&e2.message)||'Could not rejoin.'});
+  };
+
+  $('#copyLink').onclick=()=>{
+    const el=$('#myLink'); el.select(); el.setSelectionRange(0,999);
+    const done=()=>toast('Link copied — send it to yourself.');
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(el.value).then(done).catch(()=>{try{document.execCommand('copy');done()}catch(e){toast('Press Cmd/Ctrl+C to copy.')}});
+    else {try{document.execCommand('copy');done()}catch(e){toast('Press Cmd/Ctrl+C to copy.')}}
+  };
+  $('#signOut').onclick=()=>{if(confirm('Sign out of this card on this device?'))signOut()};
+  $('#leaderBtn').onclick=()=>{refresh();$('#leaderDialog').showModal()};
+  $('#closeLeader').onclick=()=>$('#leaderDialog').close();
+  $('#closeFood').onclick=()=>$('#foodDialog').close();
+  $('#markFood').onclick=()=>setSquare(true);
+  $('#resetFood').onclick=()=>setSquare(false);
+  [...document.querySelectorAll('dialog')].forEach(d=>d.addEventListener('click',ev=>{
+    if(ev.target===d&&d.id!=='setupDialog')d.close()}));
+
+  function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400)}
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+  /* ---------- boot ---------- */
+  const saved=load();
+  if(saved&&saved.me&&saved.me.name&&saved.me.device){
+    me=saved.me;
+    mine=Array.from({length:25},(_,i)=>(saved.mine||[])[i]===true);
+  }
+  paintWho(); renderBoard(); renderLeaders();
+
+  function normalBoot(){
+    if(me){
+      refresh().then(()=>{
+        const mineOnServer=board.find(p=>p.name===me.name);
+        if(mineOnServer){
+          mine=Array.from({length:25},(_,i)=>mineOnServer.tried[i]===true||mine[i]===true);
+          stash(); renderBoard();
+        }
+        push();
+      });
+    }else{
+      refresh().then(openJoin);
+    }
+  }
+
+  const hp=new URLSearchParams(location.hash.replace(/^#/,''));
+  const linkName=hp.get('play'), linkCode=(hp.get('c')||'').trim().toUpperCase();
+  if(linkName&&linkCode.length===4&&(!me||slug(me.name)!==linkName)){
+    pendingDevice=(me&&me.device)||newDevice();
+    post({action:'claim',name:linkName,code:linkCode,device:pendingDevice})
+      .then(d=>{mine=blank();adopt(d.player);toast('Signed in as '+d.player.name+'.')})
+      .catch(()=>{toast('That link did not work — join with your name below.');normalBoot()});
+  }else{
+    normalBoot();
+  }
+
+  setInterval(()=>{if(!document.hidden)refresh()},25000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+})();
+</script>
+</body>
+</html>
