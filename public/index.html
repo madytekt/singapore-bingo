@@ -101,9 +101,7 @@
   @media(max-width:699px){
     .tcard-grid{grid-template-columns:minmax(0,118px) minmax(0,1fr);gap:11px}
     .tcard-art{width:100%}
-    .tcard-stats{grid-template-columns:1fr}
-    .tcard-stats div{border-right:0;border-bottom:1px solid var(--line);padding:6px}
-    .tcard-stats div:last-child{border-bottom:0}
+    .tcard-stats div{padding:6px}
     .tcard-stats b{margin-bottom:3px}
     .tcard-stats span{font-size:.86rem}
     .tcard-flavour{font-size:.92rem;padding:8px 10px}
@@ -134,10 +132,10 @@
     letter-spacing:.06em;color:var(--gold);background:rgba(255,253,244,.88);
     border:1px solid var(--line);border-radius:999px;padding:4px 7px}
 
-  .tcard-stats{display:grid;grid-template-columns:repeat(2,1fr);
+  .tcard-stats{display:grid;grid-template-columns:1fr;
     border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fffdf5}
-  .tcard-stats div{padding:9px 8px;text-align:center;border-right:1px solid var(--line);min-width:0}
-  .tcard-stats div:last-child{border-right:0}
+  .tcard-stats div{padding:8px;text-align:center;border-bottom:1px solid var(--line);min-width:0}
+  .tcard-stats div:last-child{border-bottom:0}
   .tcard-stats b{display:block;font:850 .64rem/1 ui-sans-serif,system-ui,sans-serif;
     letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin-bottom:5px}
   .tcard-stats span{font:750 .95rem/1.25 ui-sans-serif,system-ui,sans-serif;color:var(--ink);
@@ -251,7 +249,6 @@
     .ornate-btn#leaderBtn::after{content:"🏆";font-size:1rem}
     .ornate-btn#signOut::after{content:"⎋";font-size:1rem}
     .food-hotspot.done::after{right:4%;top:4%;width:17px;height:17px;font-size:.62rem}
-    .tcard-stats{grid-template-columns:1fr 1fr}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
