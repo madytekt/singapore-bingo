@@ -71,15 +71,18 @@
     max-width:none;box-shadow:0 30px 100px rgba(48,34,18,.4)}
   dialog::backdrop{background:rgba(37,35,27,.62);backdrop-filter:blur(5px)}
   #leaderDialog,#setupDialog{width:min(520px,calc(100% - 24px));border-radius:18px}
-  #foodDialog{width:min(840px,calc(100% - 24px));max-height:94dvh;
-    overflow-y:auto;overflow-x:hidden;border-radius:16px}
+  #foodDialog{width:min(800px,calc(100% - 24px));max-height:94dvh;
+    overflow:hidden;border-radius:16px}
 
   /* ---------- the trading card ---------- */
   .tcard{position:relative;border-radius:16px;padding:9px;
+    display:flex;flex-direction:column;max-height:94dvh;
     background:linear-gradient(145deg,#e9c88a 0%,#c9a15c 18%,#f3e0b5 38%,#b8873f 58%,#e7c98a 78%,#c9a15c 100%);
     box-shadow:0 18px 48px rgba(48,34,18,.45)}
   .tcard-inner{background:var(--paper);border-radius:10px;overflow:hidden;
-    border:1px solid rgba(120,84,40,.35)}
+    border:1px solid rgba(120,84,40,.35);
+    display:flex;flex-direction:column;min-height:0;flex:1}
+  .tcard-head,.tcard-foot,.modal-actions{flex:none}
   .tcard-head{display:flex;align-items:center;gap:10px;padding:11px 52px 9px 13px;
     background:linear-gradient(#fffdf5,var(--paper2));border-bottom:1px solid var(--line)}
   .tcard-head h2{font-size:clamp(1.5rem,5.4vw,1.95rem);font-weight:400;line-height:1.05;margin:0;flex:1;min-width:0}
@@ -89,12 +92,27 @@
   .heat i{width:9px;height:9px;border-radius:50%;background:#e0d3b8;display:block}
   .heat i.on{background:var(--red)}
 
-  .tcard-grid{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 13px 0}
+  .tcard-grid{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 13px 0;
+    min-height:0;overflow-y:auto;overscroll-behavior:contain}
   .tcard-left,.tcard-right{display:grid;gap:10px;align-content:start;min-width:0}
   @media(min-width:700px){
-    .tcard-grid{grid-template-columns:minmax(0,334px) minmax(0,1fr);gap:18px}
+    .tcard-grid{grid-template-columns:minmax(0,270px) minmax(0,1fr);gap:18px}
   }
-  @media(max-width:699px){ .tcard-art{max-width:290px;margin-inline:auto;width:100%} }
+  @media(max-width:699px){
+    .tcard-art{width:min(100%,224px);margin-inline:auto}
+    .tcard-left{grid-template-columns:1fr;justify-items:center}
+    .tcard-stats{width:100%}
+  }
+  @media(max-height:780px){
+    .tcard-head{padding-block:9px 7px}
+    .tcard-grid{gap:9px;padding:10px 13px 0}
+    .tcard-flavour{font-size:.95rem;padding:9px 11px}
+    .label{margin:10px 0 6px}
+    .chip{padding:6px 10px;font-size:.83rem}
+    .tcard-stats div{padding:7px 8px}
+    .modal-actions{margin:10px 13px 11px}
+    .tcard-foot{margin-top:10px}
+  }
   .tcard-art{position:relative;border-radius:8px;
     border:1px solid rgba(120,84,40,.4);background:#fffdf4;overflow:hidden}
   .art-img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
@@ -193,6 +211,10 @@
   .linkrow button{flex:none;padding:10px 14px}
   .code-small{margin:9px 0 0!important;font-size:.74rem;opacity:.85}
   .code-small b{letter-spacing:.24em;color:var(--gold)}
+  .danger-row{margin:13px 0 0;text-align:center}
+  .linklike{background:none;border:0;padding:4px;font:750 .78rem/1 ui-sans-serif,system-ui,sans-serif;
+    color:var(--red);text-decoration:underline;text-underline-offset:3px}
+  .linklike:hover{color:var(--hibiscus-dark,#95291d)}
   .sync-warn{text-align:center;font:750 .78rem/1.4 ui-sans-serif,system-ui,sans-serif;
     color:var(--red);margin:10px 0 0}
 
@@ -327,6 +349,7 @@
         <button class="secondary" id="copyLink" type="button">Copy</button>
       </div>
       <p class="code-small">Code: <b id="codeValue"></b></p>
+      <p class="danger-row"><button class="linklike" id="deleteMe" type="button">Delete my card</button></p>
     </div>
   </section>
 </dialog>
@@ -608,6 +631,14 @@
     if(navigator.clipboard&&navigator.clipboard.writeText)
       navigator.clipboard.writeText(el.value).then(done).catch(()=>{try{document.execCommand('copy');done()}catch(e){toast('Press Cmd/Ctrl+C to copy.')}});
     else {try{document.execCommand('copy');done()}catch(e){toast('Press Cmd/Ctrl+C to copy.')}}
+  };
+  $('#deleteMe').onclick=()=>{
+    if(!me)return;
+    if(!confirm(`Delete “${me.name}” for good?\n\nThe squares are erased and the name is freed up, so you can rejoin with the right spelling.`))return;
+    post({action:'delete',name:me.name})
+      .then(d=>{if(Array.isArray(d.players))board=d.players;
+        $('#leaderDialog').close();signOut();toast('Card deleted. Join again with the right name.')})
+      .catch(e=>toast((e&&e.message)||'Could not delete that card.'));
   };
   $('#signOut').onclick=()=>{if(confirm('Sign out of this card on this device?'))signOut()};
   $('#leaderBtn').onclick=()=>{refresh();$('#leaderDialog').showModal()};

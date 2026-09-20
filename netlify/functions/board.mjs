@@ -98,6 +98,15 @@ export default async (req) => {
     return ok({ ok: true, players: await readAll(s) });
   }
 
+  if (action === 'delete') {
+    if (!existing) return fail(404, 'no_such_player', 'That player is not on the board.');
+    if (existing.device !== device) {
+      return fail(403, 'not_your_card', 'This card belongs to someone else.');
+    }
+    await s.delete(key);
+    return ok({ ok: true, players: await readAll(s) });
+  }
+
   return fail(400, 'bad_action', 'Unknown action.');
 };
 
