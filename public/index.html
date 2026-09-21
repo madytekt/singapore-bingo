@@ -228,6 +228,36 @@
   .sync-warn{text-align:center;font:750 .78rem/1.4 ui-sans-serif,system-ui,sans-serif;
     color:var(--red);margin:10px 0 0}
 
+  /* ---------- bingo celebration ---------- */
+  #fxCanvas{position:fixed;inset:0;z-index:300;pointer-events:none}
+  .bingo-banner{
+    position:fixed;left:50%;top:40%;z-index:310;pointer-events:none;opacity:0;
+    transform:translate(-50%,-50%);text-align:center;padding:20px 34px;border-radius:16px;
+    background:linear-gradient(145deg,#e9c88a 0%,#c9a15c 22%,#f6e6c0 46%,#b8873f 72%,#dcb877 100%);
+    border:2px solid #fff7e0;box-shadow:0 22px 60px rgba(48,34,18,.5);color:#3d2c10}
+  .bingo-banner b{display:block;font:900 clamp(2rem,9vw,3rem)/1 ui-sans-serif,system-ui,sans-serif;
+    letter-spacing:.14em;text-indent:.14em}
+  .bingo-banner span{display:block;margin-top:8px;
+    font:850 .72rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.22em;
+    text-transform:uppercase;color:#6b4d16}
+  .bingo-banner.show{animation:bingoPop 1.75s cubic-bezier(.2,1.35,.35,1) forwards}
+  @keyframes bingoPop{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.5) rotate(-9deg)}
+    13%{opacity:1;transform:translate(-50%,-50%) scale(1.09) rotate(3deg)}
+    25%{transform:translate(-50%,-50%) scale(1) rotate(0)}
+    76%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+    100%{opacity:0;transform:translate(-50%,-56%) scale(.95)}}
+  .food-hotspot.flash{animation:sqFlash .72s ease}
+  @keyframes sqFlash{
+    0%,100%{box-shadow:inset 0 0 0 2px rgba(171,63,50,.55)}
+    42%{box-shadow:inset 0 0 0 5px var(--legend),0 0 26px 7px rgba(205,155,60,.6);
+        background:rgba(255,231,160,.55)}}
+  @media(prefers-reduced-motion:reduce){
+    .bingo-banner.show{animation:bingoFade 1.6s ease forwards}
+    @keyframes bingoFade{0%,100%{opacity:0}12%,80%{opacity:1}}
+    .food-hotspot.flash{animation:none}
+  }
+
   .toast{position:fixed;z-index:60;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));
     transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--ink);color:#fffaf0;
     border-radius:99px;padding:10px 16px;font:750 .84rem/1 ui-sans-serif,system-ui,sans-serif;
@@ -409,7 +439,7 @@
      d:'Spiced fish paste wrapped in banana leaf and grilled until smoky and fragrant.',
      g:['fish','coconut milk','chilli','lemongrass','banana leaf'],a:['Fish','Egg']},
     {n:'Salted Egg Yolk Prawn',t:'Seafood',h:2,p:'S$18–28',w:'Keng Eng Kee, Alexandra Village',when:'Dinner',r:'Rare',
-     clue:'Keep this square free — there is a good chance this one turns up at the wedding dinner.',
+     clue:'There is a good chance this one turns up at the wedding dinner.',
      d:'Crisp prawns coated in buttery salted egg yolk, curry leaves and chilli.',
      g:['prawn','salted egg yolk','butter','curry leaf','chilli'],a:['Shellfish','Egg','Dairy']},
     {n:'Oyster Omelette',t:'Seafood',h:1,p:'S$6–12',w:'Ah Chuan, Toa Payoh Lor 7',when:'Supper',r:'Rare',
@@ -469,6 +499,9 @@
     return 'd-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)};
   const count=t=>t.reduce((n,v)=>n+(v?1:0),0);
   const linesOf=t=>LINES.filter(L=>L.every(i=>t[i]));
+  const lineIdsOf=t=>LINES.map((L,i)=>i).filter(i=>LINES[i].every(k=>t[k]));
+  const lineName=i=>i>=10 ? 'Diagonal'
+    : (i%2===0 ? 'Row '+(i/2+1) : 'Column '+((i-1)/2+1));
   const initials=n=>n.trim().split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
   const slug=n=>String(n||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-')
     .replace(/^-+|-+$/g,'').slice(0,48);
@@ -573,11 +606,12 @@
 
   function setSquare(v){
     if(!me){$('#foodDialog').close();openJoin();return}
-    const before=linesOf(mine).length;
+    const had=new Set(lineIdsOf(mine));
     mine[activeFood]=v; stash(); renderBoard(); renderLeaders(); push();
     $('#foodDialog').close();
-    toast(v?`${FOODS[activeFood].n} collected`:'Square reset');
-    if(v&&linesOf(mine).length>before)setTimeout(()=>toast('BINGO! That is a full line.'),1500);
+    const fresh=v?lineIdsOf(mine).filter(i=>!had.has(i)):[];
+    if(fresh.length)setTimeout(()=>celebrate(fresh),260);
+    else toast(v?`${FOODS[activeFood].n} collected`:'Square reset');
   }
 
   /* ---------- identity ---------- */
@@ -657,6 +691,75 @@
   $('#resetFood').onclick=()=>setSquare(false);
   [...document.querySelectorAll('dialog')].forEach(d=>d.addEventListener('click',ev=>{
     if(ev.target===d&&d.id!=='setupDialog')d.close()}));
+
+  const REDUCED=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let fxc=null,fxx=null,bits=[],raf=null;
+
+  function confetti(n){
+    if(REDUCED)return;
+    if(!fxc){fxc=document.createElement('canvas');fxc.id='fxCanvas';document.body.appendChild(fxc);
+      fxx=fxc.getContext('2d');
+      addEventListener('resize',()=>{fxc.width=innerWidth;fxc.height=innerHeight});}
+    fxc.width=innerWidth;fxc.height=innerHeight;
+    const cols=['#bb3634','#c9a15c','#e9c88a','#2c7a5c','#fffaf0','#b5892e'];
+    const ox=innerWidth/2, oy=innerHeight*0.4;
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2, sp=5+Math.random()*11;
+      bits.push({x:ox,y:oy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-4,
+        w:5+Math.random()*7,h:8+Math.random()*9,
+        rot:Math.random()*6.28,vr:(Math.random()-.5)*.4,
+        c:cols[(Math.random()*cols.length)|0],life:0});
+    }
+    if(!raf)raf=requestAnimationFrame(tick);
+  }
+  function tick(){
+    fxx.clearRect(0,0,fxc.width,fxc.height);
+    bits=bits.filter(b=>{
+      b.life++; b.vy+=0.32; b.vx*=0.995; b.x+=b.vx; b.y+=b.vy; b.rot+=b.vr;
+      if(b.y>fxc.height+40||b.life>190)return false;
+      fxx.save(); fxx.translate(b.x,b.y); fxx.rotate(b.rot);
+      fxx.globalAlpha=Math.max(0,1-b.life/190); fxx.fillStyle=b.c;
+      fxx.fillRect(-b.w/2,-b.h/2,b.w,b.h); fxx.restore();
+      return true;
+    });
+    if(bits.length)raf=requestAnimationFrame(tick);
+    else{raf=null;fxx.clearRect(0,0,fxc.width,fxc.height);}
+  }
+
+  function showBanner(text,sub){
+    const el=document.createElement('div');
+    el.className='bingo-banner';
+    el.innerHTML='<b></b><span></span>';
+    el.querySelector('b').textContent=text;
+    el.querySelector('span').textContent=sub;
+    document.body.appendChild(el);
+    el.getBoundingClientRect();           // force a reflow so the animation runs
+    el.classList.add('show');
+    setTimeout(()=>el.remove(),1900);
+  }
+
+  function flashLine(ids){
+    if(REDUCED)return;
+    const sq=document.querySelectorAll('.food-hotspot');
+    ids.forEach((i,k)=>setTimeout(()=>{
+      const b=sq[i]; if(!b)return;
+      b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+      setTimeout(()=>b.classList.remove('flash'),760);
+    },k*90));
+  }
+
+  // one celebration per newly completed line, played back to back
+  function celebrate(freshIds){
+    freshIds.forEach((lineId,k)=>{
+      setTimeout(()=>{
+        flashLine(LINES[lineId]);
+        setTimeout(()=>{
+          showBanner(freshIds.length>1?('BINGO ×'+(k+1)):'BINGO', lineName(lineId)+' complete');
+          confetti(freshIds.length>1?130:110);
+        },260);
+      },k*2000);
+    });
+  }
 
   function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400)}
