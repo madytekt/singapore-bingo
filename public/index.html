@@ -364,11 +364,12 @@
     </form>
     <div class="jf-err" id="joinErr" role="alert"></div>
     <div class="claim-box" id="claimBox" hidden>
-      <p>Someone is already playing under that name. If that is you on a new phone, enter your four-character rejoin code.</p>
+      <p id="claimWho">Someone is already playing under that name.</p>
       <form class="jf" id="claimForm">
         <input id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off" enterkeyhint="go">
         <button class="secondary" type="submit">Rejoin my card</button>
       </form>
+      <p class="danger-row"><button class="linklike" id="softTake" type="button">I don’t have my code</button></p>
     </div>
   </section>
 </dialog>
@@ -382,13 +383,16 @@
     <p class="lb-empty" id="lbEmpty" hidden>No one has eaten anything yet. Suspicious.</p>
     <p class="sync-warn" id="syncWarn" hidden>Offline — your squares are saved on this device and will sync when you reconnect.</p>
     <div class="code-note" id="codeNote" hidden>
-      <p>Save this link — it signs you back in on any phone.</p>
-      <div class="linkrow">
-        <input id="myLink" readonly aria-label="Your personal rejoin link">
-        <button class="secondary" id="copyLink" type="button">Copy</button>
+      <div id="codeFull" hidden>
+        <p>Save this link — it signs you back in on any phone.</p>
+        <div class="linkrow">
+          <input id="myLink" readonly aria-label="Your personal rejoin link">
+          <button class="secondary" id="copyLink" type="button">Copy</button>
+        </div>
+        <p class="code-small">Code: <b id="codeValue"></b></p>
       </div>
-      <p class="code-small">Code: <b id="codeValue"></b></p>
-      <p class="danger-row"><button class="linklike" id="deleteMe" type="button">Delete my card</button></p>
+      <p id="codeSoft" hidden>This card came over without a code, so there is nothing to save yet. Ask May for your personal rejoin link to lock it in.</p>
+      <p class="danger-row" id="deleteRow" hidden><button class="linklike" id="deleteMe" type="button">Delete my card</button></p>
     </div>
   </section>
 </dialog>
@@ -528,7 +532,7 @@
         .then(d=>{setOnline(true);if(Array.isArray(d.players)){board=d.players;renderLeaders()}})
         .catch(e=>{
           setOnline(false);
-          if(e&&e.error==='not_your_card'){toast('That card is claimed on another device.');signOut()}
+          if(e&&e.error==='not_your_card'){toast('That card is playing on another device now.');displaced()}
         });
     },350);
   }
@@ -619,21 +623,42 @@
     setTimeout(()=>$('#joinName').focus(),60)}
 
   function adopt(player){
-    me={name:player.name,device:me?me.device:pendingDevice,code:player.code};
+    me={name:player.name,device:me?me.device:pendingDevice,code:player.code||null,soft:!!player.soft};
     mine=Array.from({length:25},(_,i)=>player.tried[i]===true||mine[i]===true);
     stash(); $('#setupDialog').close(); paintWho(); renderBoard();
-    try{location.replace('#play='+slug(player.name)+'&c='+player.code)}catch(e){}
+    if(me.code){try{location.replace('#play='+slug(player.name)+'&c='+me.code)}catch(e){}}
     push(); refresh();
-    toast(`Welcome, ${player.name}. Bookmark this page to stay signed in.`);
+    toast(me.soft?`Welcome, ${player.name}. You can tick squares now — ask May for your personal link to lock the card in.`
+                 :`Welcome, ${player.name}. Bookmark this page to stay signed in.`);
   }
 
-  let pendingDevice=null;
+  let pendingDevice=null, takenName=null;
+
+  function openClaim(name,msg){
+    $('#joinErr').textContent='';
+    if(name)$('#joinName').value=name;
+    if(msg)$('#claimWho').textContent=msg;
+    $('#claimBox').hidden=false;
+    $('#setupDialog').showModal();
+    setTimeout(()=>$('#joinCode').focus(),60);
+  }
+
+  function displaced(){
+    const was=me?me.name:'', wasCode=me&&me.code?me.code:null;
+    takenName=was; me=null; stash(); paintWho(); renderBoard(); renderLeaders();
+    openJoin();
+    if(was)openClaim(was, wasCode
+      ? `${was} is playing on another device now. If that is you, your code is ${wasCode} — type it to take the card back. Someone else? Ask May for your link.`
+      : `${was} is playing on another device now. If that is you, type your four-character code to take the card back.`);
+  }
 
   function paintWho(){
     const on=!!me;
     $('#whoChip').hidden=!on; $('#signOut').hidden=!on;
     if(on){$('#whoName').textContent=me.name;$('#whoAv').textContent=initials(me.name);
-      $('#codeValue').textContent=me.code;$('#myLink').value=linkFor(me);$('#codeNote').hidden=false}
+      $('#codeNote').hidden=false;
+      $('#codeFull').hidden=!me.code; $('#codeSoft').hidden=!!me.code; $('#deleteRow').hidden=!me.code;
+      if(me.code){$('#codeValue').textContent=me.code;$('#myLink').value=linkFor(me)}}
     else{$('#codeNote').hidden=true}
   }
 
@@ -650,10 +675,25 @@
     post({action:'join',name,device:pendingDevice})
       .then(d=>{$('#claimBox').hidden=true;adopt(d.player)})
       .catch(e2=>{
-        if(e2&&e2.error==='name_taken'){err.textContent=e2.message;$('#claimBox').hidden=false;
+        if(e2&&e2.error==='name_taken'){
+          takenName=name; err.textContent='';
+          $('#claimWho').textContent=`${name} is already playing. If that is you on a new phone, enter your four-character rejoin code.`;
+          $('#claimBox').hidden=false;
           setTimeout(()=>$('#joinCode').focus(),60)}
         else{err.textContent='Could not reach the game. Check your connection and try again.'}
       });
+  };
+
+  $('#softTake').onclick=()=>{
+    const name=(takenName||$('#joinName').value.trim()).slice(0,40);
+    const err=$('#joinErr'), btn=$('#softTake');
+    if(!name){err.textContent='Pop a name in first.';return}
+    if(!confirm(`Take over “${name}”’s card?\n\nOnly tap OK if you are ${name}. Squares already ticked on that card come with it, and the other phone stops saving until its owner rejoins with the code.\n\nDeleting needs the code, so this device cannot erase the card.`))return;
+    err.textContent=''; btn.disabled=true;
+    pendingDevice=pendingDevice||newDevice();
+    post({action:'claim_soft',name,device:pendingDevice})
+      .then(d=>{btn.disabled=false;$('#claimBox').hidden=true;adopt(d.player)})
+      .catch(e2=>{btn.disabled=false;err.textContent=(e2&&e2.message)||'Could not take over that card.'});
   };
 
   $('#claimForm').onsubmit=e=>{

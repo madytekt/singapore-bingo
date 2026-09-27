@@ -43,6 +43,12 @@ with no code to type. Tell people to save theirs — it is the safety net for th
 
 A 4-character backup code is shown underneath in case they ever need to type it.
 
+Lost the code as well as the storage? Tapping **I don’t have my code** on the join
+screen hands the card to that phone anyway, ticking intact. Two limits keep it honest:
+the takeover never reveals the code, and a card taken over this way cannot be deleted
+from that device. Whoever holds the real code can always take the card back — that is
+why a wrong tap is annoying rather than fatal.
+
 ### What this is not
 
 The site and its API are public: anyone with the URL can read the leaderboard and
@@ -81,9 +87,12 @@ keyed by a slug of their name.
 | `GET` | Returns every player's name and squares | — |
 | `POST {action:'join', name, device}` | Claims a name, returns the rejoin code | `name_taken` if another device holds it |
 | `POST {action:'claim', name, code, device}` | Moves a card to a new device | `bad_code` |
+| `POST {action:'claim_soft', name, device}` | The lost-code path: hands the card over without the code, and without the right to delete it | `no_such_player` |
 | `POST {action:'save', name, device, tried}` | Saves 25 squares | `not_your_card` if the device isn't bound |
+| `POST {action:'delete', name, device}` | Erases a card | `not_your_card`, or `soft_card` if it was taken over without a code |
 
-`GET` never returns device ids or rejoin codes.
+`GET` never returns device ids, rejoin codes or the `soft` flag. `join` returns
+`code: null` for a soft-claimed record, so the code cannot leak by re-joining.
 
 ---
 

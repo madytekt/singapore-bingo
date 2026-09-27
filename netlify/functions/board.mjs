@@ -71,7 +71,11 @@ export default async (req) => {
     rec.name = name;
     rec.updated = Date.now();
     await s.setJSON(key, rec);
-    return ok({ player: { name: rec.name, code: rec.code, tried: rec.tried }, players: await readAll(s) });
+    // a soft-claimed card must never hand its rejoin code to the device holding it
+    return ok({
+      player: { name: rec.name, code: rec.soft ? null : rec.code, tried: rec.tried, soft: !!rec.soft },
+      players: await readAll(s)
+    });
   }
 
   if (action === 'claim') {
@@ -79,10 +83,34 @@ export default async (req) => {
     if (!existing) return fail(404, 'no_such_player', 'No one is playing under that name yet.');
     if (existing.code !== code) return fail(403, 'bad_code', 'That rejoin code does not match.');
     existing.device = device;
+    existing.soft = false; // the code proves ownership → full rights, deleting included
     existing.updated = Date.now();
     await s.setJSON(key, existing);
     return ok({
-      player: { name: existing.name, code: existing.code, tried: existing.tried },
+      player: { name: existing.name, code: existing.code, tried: existing.tried, soft: false },
+      players: await readAll(s)
+    });
+  }
+
+  // A lost rejoin code, with no lockout: the card moves to this device, but the taker
+  // never sees the code and can never delete the card. The rightful owner still holds
+  // the code — their own Leaderboard panel keeps showing it — so a wrong tap is
+  // recoverable rather than fatal.
+  if (action === 'claim_soft') {
+    if (!existing) return fail(404, 'no_such_player', 'No one is playing under that name yet.');
+    if (existing.device === device) {
+      return ok({
+        player: { name: existing.name, code: existing.soft ? null : existing.code,
+          tried: existing.tried, soft: !!existing.soft },
+        players: await readAll(s)
+      });
+    }
+    existing.device = device;
+    existing.soft = true;
+    existing.updated = Date.now();
+    await s.setJSON(key, existing);
+    return ok({
+      player: { name: existing.name, code: null, tried: existing.tried, soft: true },
       players: await readAll(s)
     });
   }
@@ -102,6 +130,9 @@ export default async (req) => {
     if (!existing) return fail(404, 'no_such_player', 'That player is not on the board.');
     if (existing.device !== device) {
       return fail(403, 'not_your_card', 'This card belongs to someone else.');
+    }
+    if (existing.soft) {
+      return fail(403, 'soft_card', 'This card was taken over without a code, so it cannot be deleted here. Rejoin with the rejoin code to unlock deleting.');
     }
     await s.delete(key);
     return ok({ ok: true, players: await readAll(s) });

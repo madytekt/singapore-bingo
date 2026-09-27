@@ -49,7 +49,11 @@ There are no accounts. The rules are enforced server-side in `board.mjs`:
 - `join` refuses (`name_taken`) if the name exists on a different device.
 - `save` and `delete` refuse (`not_your_card`) unless the device matches.
 - `claim` swaps the bound device when given the right 4-character code.
-- **`GET` must never return `device` or `code`.** `readAll()` strips them. If you
+- `claim_soft` is the lost-code path: swaps the bound device **without** the code and
+  sets `soft: true`. A soft claimer can tick and rejoin, but never receives the code
+  (`join` returns `code: null` for a soft record) and cannot delete the card
+  (`soft_card`). A `claim` with the right code clears `soft`, restoring full rights.
+- **`GET` must never return `device`, `code` or `soft`.** `readAll()` strips them. If you
   add a field to the record, check it isn't leaked there.
 
 Recovery is a **personal link** — `/#play=<slug>&c=<CODE>` — surfaced with a Copy
