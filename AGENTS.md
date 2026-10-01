@@ -98,10 +98,11 @@ bleed is easy to miss on a single card.
 
 ## Leaderboard & the compare overlay
 
-- **Hosts last:** the `PINNED` array in `public/index.html` (slugs — currently `jonathan`,
-  `may`) parks those rows at the bottom of the leaderboard. Ranks are assigned *before* the
-  reorder, so a parked row still shows its real standing. If a host rejoins under a new
-  spelling, add that slug here.
+- **Hosts last, unranked:** the `PINNED` array in `public/index.html` (slugs — currently
+  `jonathan`, `may`) parks those rows at the bottom of the leaderboard with a `—` instead of a
+  rank, so the other players are numbered from 1. Pinned rows carry `.pinned` (sandier
+  background than the rest) and the first one gets `.pinned-first` (dashed divider). If a host
+  rejoins under a new spelling, add that slug here.
 - **Compare:** tapping a row overlays that player's ticks on your board — green `cmp-both`,
   blue `cmp-theirs`, red `cmp-mine` — and opens the sticky `#cmpBar` with the counts. Tapping
   the same row again (or **Back to my board**) reverts; closing the leaderboard does not, so

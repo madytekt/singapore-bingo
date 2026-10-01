@@ -217,7 +217,11 @@
   .leader-name span{font-size:.71rem;color:#707773}
   .leader-score{font-weight:900;color:var(--red);font-variant-numeric:tabular-nums}
   .leader-row{cursor:pointer}
-  .leader-row:hover{background:#f7efdc;border-radius:8px}
+  /* the hosts: same list, quietly set apart and out of the running */
+  .leader-row.pinned{background:#f3ead4;border-radius:8px}
+  .leader-row.pinned .rank{color:var(--muted)}
+  .leader-row.me.pinned{background:#f0e3c4}
+  .leader-row:hover{background:#eee1c4;border-radius:8px}
   .leader-row.viewing{background:#e8eff6;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(63,107,142,.45)}
   .leader-row.pinned-first{border-top:1px dashed var(--line)}
   .host-tag{display:inline-block;margin-left:5px;padding:2px 6px;border:1px solid var(--gold2);
@@ -637,17 +641,18 @@
     if(me&&!rows.some(r=>r.name===me.name))rows.push({name:me.name,c:count(mine),b:linesOf(mine).length});
     else if(me){const r=rows.find(r=>r.name===me.name);r.c=count(mine);r.b=linesOf(mine).length}
     rows.sort((a,b)=>b.c-a.c||b.b-a.b||a.name.localeCompare(b.name));
-    // rank by real standing first, then park the hosts at the bottom keeping that rank
+    // The hosts don't compete: rank the rest from 1, then park the hosts at the bottom unranked
     let rank=0,prev=null;
-    rows.forEach((r,i)=>{const k=r.c+':'+r.b;if(k!==prev){rank=i+1;prev=k}r.rank=rank});
     const pinned=rows.filter(r=>PINNED.includes(slug(r.name)));
-    const shown=rows.filter(r=>!PINNED.includes(slug(r.name))).concat(pinned);
-    const pinStart=shown.length-pinned.length;
+    const others=rows.filter(r=>!PINNED.includes(slug(r.name)));
+    others.forEach((r,i)=>{const k=r.c+':'+r.b;if(k!==prev){rank=i+1;prev=k}r.rank=rank});
+    const shown=others.concat(pinned);
+    const pinStart=others.length;
     $('#lbEmpty').hidden=shown.length>0;
     $('#leaderList').innerHTML=shown.map((r,i)=>{
       const isMe=me&&r.name===me.name, isPin=i>=pinStart;
-      return `<div class="leader-row${isMe?' me':''}${compare===r.name?' viewing':''}${isPin&&i===pinStart?' pinned-first':''}">
-        <div class="rank">${r.c?r.rank:'—'}</div>
+      return `<div class="leader-row${isMe?' me':''}${isPin?' pinned':''}${compare===r.name?' viewing':''}${isPin&&i===pinStart?' pinned-first':''}">
+        <div class="rank">${isPin||!r.c?'—':r.rank}</div>
         <div class="avatar">${esc(initials(r.name))}</div>
         <div class="leader-name"><strong>${esc(r.name)}${isMe?' · you':''}</strong>
           <span>${r.b} bingo ${r.b===1?'line':'lines'}${isPin?'<span class="host-tag">host</span>':''}</span></div>
