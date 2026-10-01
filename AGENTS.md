@@ -96,6 +96,23 @@ bleed is easy to miss on a single card.
   (`.hotspot-grid`, positioned by percentage). That's why the board never looks
   cropped. If the poster image is ever replaced, the hotspot offsets need retuning.
 
+## Leaderboard & the compare overlay
+
+- **Hosts last:** the `PINNED` array in `public/index.html` (slugs — currently `jonathan`,
+  `may`) parks those rows at the bottom of the leaderboard. Ranks are assigned *before* the
+  reorder, so a parked row still shows its real standing. If a host rejoins under a new
+  spelling, add that slug here.
+- **Compare:** tapping a row overlays that player's ticks on your board — green `cmp-both`,
+  blue `cmp-theirs`, red `cmp-mine` — and opens the sticky `#cmpBar` with the counts. Tapping
+  the same row again (or **Back to my board**) reverts; closing the leaderboard does not, so
+  the comparison survives a look at the dialog. Tick colours come from the `--mark/--wash/
+  --edge` custom properties on `.food-hotspot`; add a new state to all three `::after` badge
+  media queries or the badge size will drift on phones.
+- **Rejoin prompt:** `showClaim(name)` — one question ("Rejoin as X?") and no explanation.
+  The code is prefilled only from the local `codes` map, i.e. codes *this* device has held
+  before; the API deliberately never returns anyone's code, so a genuinely new phone still
+  has to type it.
+
 ## Editing dishes
 
 All 25 live in the `FOODS` array in `public/index.html`:

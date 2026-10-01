@@ -58,9 +58,15 @@
   .food-hotspot{position:relative;border:0;background:transparent;padding:0;
     transition:background .18s ease,box-shadow .18s ease}
   .food-hotspot:hover{background:rgba(255,248,217,.12);box-shadow:inset 0 0 0 1px rgba(175,116,49,.3)}
-  .food-hotspot.done{background:rgba(160,46,42,.13);box-shadow:inset 0 0 0 2px rgba(171,63,50,.55)}
-  .food-hotspot.done::after{content:"✓";position:absolute;right:7%;top:6%;width:28px;height:28px;
-    border-radius:50%;display:grid;place-items:center;background:var(--red);color:#fffaf0;
+  /* a ticked square: red on your own board, green/blue while comparing with a friend */
+  .food-hotspot.done,.food-hotspot.cmp-mine{--mark:var(--red);--wash:rgba(160,46,42,.13);--edge:rgba(171,63,50,.55)}
+  .food-hotspot.cmp-both{--mark:#2c7a5c;--wash:rgba(44,122,92,.18);--edge:rgba(44,122,92,.62)}
+  .food-hotspot.cmp-theirs{--mark:#3f6b8e;--wash:rgba(63,107,142,.18);--edge:rgba(63,107,142,.62)}
+  .food-hotspot.done,.food-hotspot.cmp-mine,
+  .food-hotspot.cmp-both,.food-hotspot.cmp-theirs{background:var(--wash);box-shadow:inset 0 0 0 2px var(--edge)}
+  .food-hotspot.done::after,.food-hotspot.cmp-mine::after,
+  .food-hotspot.cmp-both::after,.food-hotspot.cmp-theirs::after{content:"✓";position:absolute;right:7%;top:6%;
+    width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--mark);color:#fffaf0;
     font:700 1rem/1 ui-sans-serif,system-ui,sans-serif;box-shadow:0 3px 10px rgba(89,28,25,.28)}
   .screen-note{width:min(860px,calc(100% - 30px));margin:16px auto 0;text-align:center;
     color:var(--muted);font:italic .92rem/1.5 Georgia,serif}
@@ -210,6 +216,29 @@
   .leader-name strong{display:block;font-size:.92rem;overflow-wrap:anywhere}
   .leader-name span{font-size:.71rem;color:#707773}
   .leader-score{font-weight:900;color:var(--red);font-variant-numeric:tabular-nums}
+  .leader-row{cursor:pointer}
+  .leader-row:hover{background:#f7efdc;border-radius:8px}
+  .leader-row.viewing{background:#e8eff6;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(63,107,142,.45)}
+  .leader-row.pinned-first{border-top:1px dashed var(--line)}
+  .host-tag{display:inline-block;margin-left:5px;padding:2px 6px;border:1px solid var(--gold2);
+    border-radius:999px;font:850 .6rem/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--gold)}
+  .lb-hint{margin:0 0 12px;text-align:center;color:var(--muted);font:italic .82rem/1.4 Georgia,serif}
+
+  /* ---------- compare overlay bar ---------- */
+  .cmp-bar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:15;
+    width:min(1040px,100%);margin:0 auto 12px;padding:10px 12px;background:#fffaf1;
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 22px rgba(82,56,27,.12)}
+  .cmp-head{display:flex;align-items:center;gap:10px}
+  .cmp-who{flex:1;min-width:0;font-family:ui-sans-serif,system-ui,sans-serif}
+  .cmp-who strong{display:block;font-size:.95rem;overflow-wrap:anywhere}
+  .cmp-who span{font-size:.74rem;color:var(--muted)}
+  .cmp-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:9px;
+    font:750 .74rem/1.2 ui-sans-serif,system-ui,sans-serif;color:#5d6a70}
+  .cmp-legend span{display:flex;align-items:center;gap:5px}
+  .cmp-legend b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .sw{width:11px;height:11px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+  .sw.both{background:#2c7a5c}.sw.theirs{background:#3f6b8e}.sw.mine{background:var(--red)}
   .lb-empty{text-align:center;color:var(--muted);font:italic .95rem/1.5 Georgia,serif;padding:18px 0}
   .code-note{margin-top:15px;padding-top:13px;border-top:1px solid var(--line);
     font:750 .82rem/1.5 ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
@@ -269,7 +298,8 @@
     .mini-brand{display:none}.bingo-label{display:none}
     .progress-chip{padding:6px 11px;gap:8px}.pips i{width:3px;height:11px}
     main{padding:10px 4px 40px}.poster-shell{width:100%}
-    .food-hotspot.done::after{width:20px;height:20px;font-size:.72rem}
+    .food-hotspot.done::after,.food-hotspot.cmp-mine::after,
+    .food-hotspot.cmp-both::after,.food-hotspot.cmp-theirs::after{width:20px;height:20px;font-size:.72rem}
     .screen-note{font-size:.8rem;margin-top:11px}
     .who-chip{max-width:112px}.who-chip .nm{font-size:.78rem}
   }
@@ -278,7 +308,8 @@
     .ornate-btn{font-size:0;width:36px;height:34px;padding:0}
     .ornate-btn#leaderBtn::after{content:"🏆";font-size:1rem}
     .ornate-btn#signOut::after{content:"⎋";font-size:1rem}
-    .food-hotspot.done::after{right:4%;top:4%;width:17px;height:17px;font-size:.62rem}
+    .food-hotspot.done::after,.food-hotspot.cmp-mine::after,
+    .food-hotspot.cmp-both::after,.food-hotspot.cmp-theirs::after{right:4%;top:4%;width:17px;height:17px;font-size:.62rem}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -302,6 +333,21 @@
 </header>
 
 <main>
+  <div class="cmp-bar" id="cmpBar" hidden>
+    <div class="cmp-head">
+      <span class="avatar" id="cmpAv"></span>
+      <div class="cmp-who">
+        <strong id="cmpName"></strong>
+        <span id="cmpSum"></span>
+      </div>
+      <button class="ornate-btn" id="cmpExit" type="button">Back to my board</button>
+    </div>
+    <div class="cmp-legend">
+      <span><i class="sw both"></i>Both <b id="cmpBoth">0</b></span>
+      <span><i class="sw theirs"></i><span id="cmpLblTheirs">Theirs only</span> <b id="cmpTheirs">0</b></span>
+      <span><i class="sw mine"></i>Yours only <b id="cmpMine">0</b></span>
+    </div>
+  </div>
   <div class="poster-shell">
     <img class="poster" src="assets/singapore-food-bingo-reference.png" alt="Singapore Food Bingo board with 25 illustrated local dishes">
     <section class="hotspot-grid" id="hotspotGrid" aria-label="Interactive Singapore food bingo board"></section>
@@ -356,7 +402,7 @@
 
 <dialog id="setupDialog" aria-label="Join the game">
   <section class="setup">
-    <h2>Join the game</h2>
+    <h2 id="setupTitle">Join the game</h2>
     <p>Use the name your friends know you by. Your card sticks to this device, so nobody else can tick your squares.</p>
     <form class="jf" id="joinForm">
       <input id="joinName" maxlength="40" placeholder="Your name" autocomplete="given-name" enterkeyhint="go">
@@ -364,7 +410,8 @@
     </form>
     <div class="jf-err" id="joinErr" role="alert"></div>
     <div class="claim-box" id="claimBox" hidden>
-      <p id="claimWho">Someone is already playing under that name.</p>
+      <p id="claimWho">Rejoin as this player?</p>
+      <p class="claim-hint" id="claimHint">Enter your four-character code.</p>
       <form class="jf" id="claimForm">
         <input id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off" enterkeyhint="go">
         <button class="secondary" type="submit">Rejoin my card</button>
@@ -378,7 +425,7 @@
   <section class="setup">
     <button class="close" id="closeLeader" aria-label="Close" style="right:12px;top:12px">×</button>
     <h2>Leaderboard</h2>
-    <p>Every plate counts. Completed lines earn bragging rights.</p>
+    <p class="lb-hint">Tap a player to overlay their ticks on your board.</p>
     <div class="leader-list" id="leaderList"></div>
     <p class="lb-empty" id="lbEmpty" hidden>No one has eaten anything yet. Suspicious.</p>
     <p class="sync-warn" id="syncWarn" hidden>Offline — your squares are saved on this device and will sync when you reconnect.</p>
@@ -495,10 +542,16 @@
   let me=null;          // {name, device, code}
   let mine=blank();     // my 25 squares
   let board=[];         // [{name,tried,updated}]
+  let codes={};         // slug(name) → rejoin code, learned on this device only
+  let compare=null;     // name of the player whose ticks are overlaid on my board
   let online=null, activeFood=null, pushTimer=null, toastTimer=null;
 
+  // The two hosts sit at the bottom of the leaderboard whatever their score.
+  const PINNED=['jonathan','may'];
+
   const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
-  const stash=()=>{try{localStorage.setItem(KEY,JSON.stringify({me,mine}))}catch{}};
+  const stash=()=>{try{localStorage.setItem(KEY,JSON.stringify({me,mine,codes}))}catch{}};
+  const rememberCode=(name,code)=>{if(!name||!code)return;codes[slug(name)]=code;stash()};
   const newDevice=()=>{try{if(crypto.randomUUID)return crypto.randomUUID()}catch{}
     return 'd-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)};
   const count=t=>t.reduce((n,v)=>n+(v?1:0),0);
@@ -538,13 +591,35 @@
   }
 
   /* ---------- board ---------- */
+  function otherTried(){
+    if(!compare)return null;
+    const p=board.find(x=>x.name===compare);
+    if(!p)return null;
+    return Array.from({length:25},(_,i)=>(p.tried||[])[i]===true);
+  }
+
   function renderBoard(){
     const grid=$('#hotspotGrid');
-    grid.innerHTML=FOODS.map((f,i)=>
-      `<button class="food-hotspot${mine[i]?' done':''}${f.clue?' has-clue':''}" data-i="${i}" type="button"></button>`).join('');
+    const other=otherTried();
+    grid.innerHTML=FOODS.map((f,i)=>{
+      let cls='food-hotspot';
+      if(other){
+        const a=!!mine[i], b=!!other[i];
+        cls+=a&&b?' cmp-both':b?' cmp-theirs':a?' cmp-mine':'';
+      }else if(mine[i])cls+=' done';
+      if(f.clue)cls+=' has-clue';
+      return `<button class="${cls}" data-i="${i}" type="button"></button>`;
+    }).join('');
     [...grid.children].forEach((b,i)=>{
-      b.setAttribute('aria-label',FOODS[i].n+(mine[i]?', tried':', not tried yet')+(FOODS[i].clue?', has a clue':''));
-      b.setAttribute('aria-pressed',mine[i]?'true':'false');
+      const a=!!mine[i], o=other?!!other[i]:false;
+      const st=other
+        ? (a&&o?'you have both tried it'
+          :o?`${compare} has tried it, you have not`
+          :a?'you have tried it, they have not'
+          :'neither of you has tried it')
+        : (a?'tried':'not tried yet');
+      b.setAttribute('aria-label',FOODS[i].n+', '+st+(FOODS[i].clue?', has a clue':''));
+      b.setAttribute('aria-pressed',a?'true':'false');
       b.onclick=()=>openFood(i);
     });
     const c=count(mine), done=linesOf(mine), onLine=new Set(done.flat());
@@ -562,18 +637,58 @@
     if(me&&!rows.some(r=>r.name===me.name))rows.push({name:me.name,c:count(mine),b:linesOf(mine).length});
     else if(me){const r=rows.find(r=>r.name===me.name);r.c=count(mine);r.b=linesOf(mine).length}
     rows.sort((a,b)=>b.c-a.c||b.b-a.b||a.name.localeCompare(b.name));
-    $('#lbEmpty').hidden=rows.length>0;
+    // rank by real standing first, then park the hosts at the bottom keeping that rank
     let rank=0,prev=null;
-    $('#leaderList').innerHTML=rows.map((r,i)=>{
-      const k=r.c+':'+r.b; if(k!==prev){rank=i+1;prev=k}
-      const isMe=me&&r.name===me.name;
-      return `<div class="leader-row${isMe?' me':''}">
-        <div class="rank">${r.c?rank:'—'}</div>
+    rows.forEach((r,i)=>{const k=r.c+':'+r.b;if(k!==prev){rank=i+1;prev=k}r.rank=rank});
+    const pinned=rows.filter(r=>PINNED.includes(slug(r.name)));
+    const shown=rows.filter(r=>!PINNED.includes(slug(r.name))).concat(pinned);
+    const pinStart=shown.length-pinned.length;
+    $('#lbEmpty').hidden=shown.length>0;
+    $('#leaderList').innerHTML=shown.map((r,i)=>{
+      const isMe=me&&r.name===me.name, isPin=i>=pinStart;
+      return `<div class="leader-row${isMe?' me':''}${compare===r.name?' viewing':''}${isPin&&i===pinStart?' pinned-first':''}">
+        <div class="rank">${r.c?r.rank:'—'}</div>
         <div class="avatar">${esc(initials(r.name))}</div>
         <div class="leader-name"><strong>${esc(r.name)}${isMe?' · you':''}</strong>
-          <span>${r.b} bingo ${r.b===1?'line':'lines'}</span></div>
+          <span>${r.b} bingo ${r.b===1?'line':'lines'}${isPin?'<span class="host-tag">host</span>':''}</span></div>
         <div class="leader-score">${r.c}/25</div></div>`;
     }).join('');
+    [...$('#leaderList').children].forEach((el,i)=>{
+      el.setAttribute('role','button');
+      el.tabIndex=0;
+      el.setAttribute('title','Show their ticks on your board');
+      const pick=()=>{setCompare(shown[i].name);$('#leaderDialog').close()};
+      el.onclick=pick;
+      el.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();pick()}};
+    });
+    renderCompare();
+  }
+
+  /* ---------- comparing with a friend ---------- */
+  function setCompare(name){
+    compare=compare===name?null:name;
+    renderBoard(); renderLeaders();
+    toast(compare?`Showing ${compare}'s squares on your board`:'Back to your own board');
+  }
+
+  function renderCompare(){
+    const bar=$('#cmpBar');
+    if(compare&&!board.some(p=>p.name===compare))compare=null;
+    if(!compare){bar.hidden=true;return}
+    const other=otherTried()||blank();
+    let both=0,theirs=0,onlyMine=0;
+    for(let i=0;i<25;i++){
+      const a=!!mine[i], b=!!other[i];
+      if(a&&b)both++; else if(b)theirs++; else if(a)onlyMine++;
+    }
+    $('#cmpAv').textContent=initials(compare);
+    $('#cmpName').textContent=compare;
+    $('#cmpSum').textContent=`${count(other)}/25 tried · ${both} in common`;
+    $('#cmpLblTheirs').textContent=compare+' only';
+    $('#cmpBoth').textContent=both;
+    $('#cmpTheirs').textContent=theirs;
+    $('#cmpMine').textContent=onlyMine;
+    bar.hidden=false;
   }
 
   /* ---------- the card ---------- */
@@ -619,11 +734,16 @@
   }
 
   /* ---------- identity ---------- */
-  function openJoin(){$('#joinErr').textContent='';$('#claimBox').hidden=true;$('#setupDialog').showModal();
+  function openJoin(){
+    const dlg=$('#setupDialog');
+    $('#joinErr').textContent=''; $('#claimBox').hidden=true; $('#setupTitle').textContent='Join the game';
+    if(!dlg.open)dlg.showModal();
     setTimeout(()=>$('#joinName').focus(),60)}
 
   function adopt(player){
     me={name:player.name,device:me?me.device:pendingDevice,code:player.code||null,soft:!!player.soft};
+    if(me.code)codes[slug(me.name)]=me.code;
+    compare=null;
     mine=Array.from({length:25},(_,i)=>player.tried[i]===true||mine[i]===true);
     stash(); $('#setupDialog').close(); paintWho(); renderBoard();
     if(me.code){try{location.replace('#play='+slug(player.name)+'&c='+me.code)}catch(e){}}
@@ -634,22 +754,27 @@
 
   let pendingDevice=null, takenName=null;
 
-  function openClaim(name,msg){
-    $('#joinErr').textContent='';
+  // One question, and the code filled in whenever this device already knows it.
+  function showClaim(name){
+    const dlg=$('#setupDialog'), known=(name&&codes[slug(name)])||'';
     if(name)$('#joinName').value=name;
-    if(msg)$('#claimWho').textContent=msg;
+    $('#joinErr').textContent='';
+    $('#setupTitle').textContent='Rejoin your card';
+    $('#claimWho').textContent=name?`Rejoin as ${name}?`:'Rejoin your card?';
+    $('#claimHint').textContent=known?'Your code is filled in — tap Rejoin.'
+      :'Enter your four-character code.';
+    $('#joinCode').value=known;
     $('#claimBox').hidden=false;
-    $('#setupDialog').showModal();
-    setTimeout(()=>$('#joinCode').focus(),60);
+    if(!dlg.open)dlg.showModal();
+    setTimeout(()=>{(known?$('#claimForm button'):$('#joinCode')).focus()},60);
   }
 
   function displaced(){
     const was=me?me.name:'', wasCode=me&&me.code?me.code:null;
-    takenName=was; me=null; stash(); paintWho(); renderBoard(); renderLeaders();
+    if(was&&wasCode)rememberCode(was,wasCode);
+    takenName=was; me=null; compare=null; stash(); paintWho(); renderBoard(); renderLeaders();
     openJoin();
-    if(was)openClaim(was, wasCode
-      ? `${was} is playing on another device now. If that is you, your code is ${wasCode} — type it to take the card back. Someone else? Ask May for your link.`
-      : `${was} is playing on another device now. If that is you, type your four-character code to take the card back.`);
+    if(was)showClaim(was);
   }
 
   function paintWho(){
@@ -658,12 +783,14 @@
     if(on){$('#whoName').textContent=me.name;$('#whoAv').textContent=initials(me.name);
       $('#codeNote').hidden=false;
       $('#codeFull').hidden=!me.code; $('#codeSoft').hidden=!!me.code; $('#deleteRow').hidden=!me.code;
-      if(me.code){$('#codeValue').textContent=me.code;$('#myLink').value=linkFor(me)}}
+      if(me.code){$('#codeValue').textContent=me.code;$('#myLink').value=linkFor(me);
+        if(codes[slug(me.name)]!==me.code)rememberCode(me.name,me.code)}}
     else{$('#codeNote').hidden=true}
   }
 
   function signOut(){
-    me=null; mine=blank(); stash(); paintWho(); renderBoard(); renderLeaders(); openJoin();
+    if(me&&me.code)rememberCode(me.name,me.code);
+    me=null; mine=blank(); compare=null; stash(); paintWho(); renderBoard(); renderLeaders(); openJoin();
   }
 
   $('#joinForm').onsubmit=e=>{
@@ -676,10 +803,9 @@
       .then(d=>{$('#claimBox').hidden=true;adopt(d.player)})
       .catch(e2=>{
         if(e2&&e2.error==='name_taken'){
-          takenName=name; err.textContent='';
-          $('#claimWho').textContent=`${name} is already playing. If that is you on a new phone, enter your four-character rejoin code.`;
-          $('#claimBox').hidden=false;
-          setTimeout(()=>$('#joinCode').focus(),60)}
+          takenName=name;
+          showClaim(name);
+        }
         else{err.textContent='Could not reach the game. Check your connection and try again.'}
       });
   };
@@ -688,7 +814,7 @@
     const name=(takenName||$('#joinName').value.trim()).slice(0,40);
     const err=$('#joinErr'), btn=$('#softTake');
     if(!name){err.textContent='Pop a name in first.';return}
-    if(!confirm(`Take over “${name}”’s card?\n\nOnly tap OK if you are ${name}. Squares already ticked on that card come with it, and the other phone stops saving until its owner rejoins with the code.\n\nDeleting needs the code, so this device cannot erase the card.`))return;
+    if(!confirm(`Rejoin as ${name} without the code?\n\nOnly if you are ${name}. The squares already ticked come with the card.`))return;
     err.textContent=''; btn.disabled=true;
     pendingDevice=pendingDevice||newDevice();
     post({action:'claim_soft',name,device:pendingDevice})
@@ -725,6 +851,7 @@
   };
   $('#signOut').onclick=()=>{if(confirm('Sign out of this card on this device?'))signOut()};
   $('#leaderBtn').onclick=()=>{refresh();$('#leaderDialog').showModal()};
+  $('#cmpExit').onclick=()=>setCompare(null);
   $('#closeLeader').onclick=()=>$('#leaderDialog').close();
   $('#closeFood').onclick=()=>$('#foodDialog').close();
   $('#markFood').onclick=()=>setSquare(true);
@@ -807,6 +934,7 @@
 
   /* ---------- boot ---------- */
   const saved=load();
+  if(saved&&saved.codes&&typeof saved.codes==='object')codes=saved.codes;
   if(saved&&saved.me&&saved.me.name&&saved.me.device){
     me=saved.me;
     mine=Array.from({length:25},(_,i)=>(saved.mine||[])[i]===true);
